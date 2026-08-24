@@ -1,4 +1,4 @@
-import { BookingType } from '@models/index';
+import { BookingType, VisitType } from '@models/index';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -12,9 +12,8 @@ import {
   IsString,
   Length,
   Min,
-  MinDate,
   ValidateIf,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
 
 export class WorkingDayDto {
@@ -77,4 +76,8 @@ export class CreateClinicDto {
   @IsInt()
   @Min(1)
   maxPatientsPerDay: number;
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  followUpPrice: number;
 }

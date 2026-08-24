@@ -54,10 +54,17 @@ export class Clinic {
   bookingType: BookingType;
 
   @Prop({ type: Number })
-  slotDuration?: number; 
+  slotDuration?: number;
 
   @Prop({ type: Number, required: true, default: 20 })
   maxPatientsPerDay: number;
+
+  @Prop({
+    type: Number,
+    required: true,
+    min: 0,
+  })
+  followUpPrice: number;
 }
 
 export const clinicSchema = SchemaFactory.createForClass(Clinic);

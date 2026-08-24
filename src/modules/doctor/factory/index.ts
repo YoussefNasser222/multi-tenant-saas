@@ -24,7 +24,7 @@ export class DoctorFactoryService {
   ) {
     const doctor = await this.doctorRepo.getOne({ _id: id });
     if (!doctor) {
-      throw new Error('Doctor not found');
+      throw new NotFoundException('Doctor not found');
     }
     const updatedDoctor = new Doctor();
     const newPassword = updateDoctorDto.password
@@ -57,12 +57,10 @@ export class DoctorFactoryService {
     clinic.doctorId = doctor._id;
     clinic.workingDays = createClinicDto.workingDays;
     clinic.address = createClinicDto.address || '';
-
-    // ✅ الحقول اللي كانت ناقصة
     clinic.bookingType = createClinicDto.bookingType;
     clinic.slotDuration = createClinicDto.slotDuration;
     clinic.maxPatientsPerDay = createClinicDto.maxPatientsPerDay;
-
+    clinic.followUpPrice = createClinicDto.followUpPrice;
     return clinic;
   }
   async updateClinic(updateClinicDto: UpdatedClinicDto, doctor: any) {
@@ -85,11 +83,13 @@ export class DoctorFactoryService {
     clinic.doctorId = oldClinic.doctorId;
     clinic.workingDays = updateClinicDto.workingDays || oldClinic.workingDays;
     clinic.address = updateClinicDto.address || oldClinic.address;
-
     clinic.bookingType = updateClinicDto.bookingType ?? oldClinic.bookingType;
-    clinic.slotDuration = updateClinicDto.slotDuration ?? oldClinic.slotDuration;
+    clinic.slotDuration =
+      updateClinicDto.slotDuration ?? oldClinic.slotDuration;
     clinic.maxPatientsPerDay =
       updateClinicDto.maxPatientsPerDay ?? oldClinic.maxPatientsPerDay;
+    clinic.followUpPrice =
+      updateClinicDto.followUpPrice ?? oldClinic.followUpPrice;
 
     return clinic;
   }

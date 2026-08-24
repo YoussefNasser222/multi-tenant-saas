@@ -5,6 +5,7 @@ export enum Role {
   Admin = 'Admin',
   Doctor = 'Doctor',
   Patient = 'Patient',
+  Hospital = 'Hospital',
 }
 
 @Schema({ timestamps: true, discriminatorKey: 'role' })

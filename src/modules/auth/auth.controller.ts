@@ -4,12 +4,24 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { CreateDoctorDto, CreatePatientDto, LoginDto, ResetPasswordDto } from './dto/create-auth.dto';
 import { AuthFactoryService } from './factory';
+import { CreateHospitalDto } from './dto/create-hospital.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService,
     private readonly authFactoryService: AuthFactoryService
   ) { }
+  @Post('register/hospital')
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  async createHospital(@Body() createHospitalDto: CreateHospitalDto) {
+    const hospital = await this.authFactoryService.createHospital(createHospitalDto)
+    const createdHospital = await this.authService.createHospital(hospital);
+    return {
+      message: "hospital created successfully",
+      success: true,
+      data: { createdHospital }
+    }
+  }
   @Post('register/doctor')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   async createDoctor(@Body() createDoctorDto: CreateDoctorDto): Promise<{ message: string; success: boolean; data: { createdDoctor: { phoneNumber: string; firstName: string; lastName: string; clinicId: import("mongoose").Types.ObjectId; _id: import("mongoose").Types.ObjectId; email: string; role: import("../../models").Role; nationalId: string; __v: number; }; }; }> {

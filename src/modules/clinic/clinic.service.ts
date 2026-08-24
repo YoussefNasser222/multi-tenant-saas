@@ -1,4 +1,4 @@
-import { AppointmentRepository, AppointmentStatus, BookingType, ClinicRepository } from '@models/index';
+import { AppointmentRepository, AppointmentStatus,  ClinicRepository, BookingType } from '@models/index';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 @Injectable()
@@ -50,7 +50,7 @@ async getAvailableSlots(clinicId: string, date: string) {
     return { availableSlots: [] }; 
   }
 
-  // نحسب كل الـ slots الممكنة نظريًا
+  
   const slots: string[] = [];
   const start = new Date(workingDay.from);
   const end = new Date(workingDay.to);

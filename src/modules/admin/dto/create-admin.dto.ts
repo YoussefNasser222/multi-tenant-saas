@@ -13,5 +13,11 @@ export class CreateAdminDto {
 export class ActiveAccountDto {
   @IsNumber()
   @Min(1)
-monthNumber : number
+  monthNumber: number;
+}
+
+export class ActiveHospitalDto {
+  @IsNumber()
+  @Min(1)
+  monthNumber: number;
 }

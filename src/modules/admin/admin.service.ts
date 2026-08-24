@@ -2,12 +2,13 @@ import {
   AdminRepository,
   ClinicRepository,
   DoctorRepository,
+  HospitalRepository,
   PatientRepository,
 } from '@models/index';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Admin } from './entities/admin.entity';
 import { addMonths } from 'date-fns';
-import { ActiveAccountDto } from './dto/create-admin.dto';
+import { ActiveAccountDto, ActiveHospitalDto } from './dto/create-admin.dto';
 @Injectable()
 export class AdminService {
   constructor(
@@ -15,6 +16,7 @@ export class AdminService {
     private readonly doctorRepo: DoctorRepository,
     private readonly patientRepo: PatientRepository,
     private readonly clinicRepo: ClinicRepository,
+    private readonly hospitalRepo: HospitalRepository,
   ) {}
   async dashBoard() {
     const totalDoctor = await this.doctorRepo.count();
@@ -119,6 +121,27 @@ export class AdminService {
       },
     );
   }
+   async activeHospital(id: string, activeHospitalDto: ActiveHospitalDto) {
+    const hospital = await this.hospitalRepo.getOne({ _id: id });
+    if (!hospital) {
+      throw new NotFoundException('hospital not found');
+    }
+    const startDate =
+      hospital.paidExpired && hospital.paidExpired > new Date()
+        ? hospital.paidExpired
+        : new Date();
+    return await this.hospitalRepo.update(
+      { _id: id },
+      {
+        isPaid: true,
+        paidExpired: addMonths(startDate, activeHospitalDto.monthNumber),
+      },
+      {
+        returnDocument: 'after',
+        select: '-password -otp -otpExpired',
+      },
+    );
+  }
   async deleteDoctor(id: string) {
     const doctor = await this.doctorRepo.deleteOne({ _id: id });
     await this.clinicRepo.deleteOne({ doctorId: id });
@@ -133,5 +156,27 @@ export class AdminService {
       throw new NotFoundException('patient not found');
     }
     return patient;
+  }
+  async getHospitals() {
+    const hospitals = await this.hospitalRepo.getAll(
+      {},
+      {},
+      { select: '-password -otp -otpExpired' },
+    );
+    if (!hospitals || hospitals.length === 0) {
+      return [];
+    }
+    return hospitals;
+  }
+  async getHospitalById(id: string) {
+    const hospital = await this.hospitalRepo.getOne(
+      { _id: id },
+      {},
+      { select: '-password -otp -otpExpired' },
+    );
+    if (!hospital) {
+      throw new NotFoundException('hospital not found');
+    }
+    return hospital;
   }
 }

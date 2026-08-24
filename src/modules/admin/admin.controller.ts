@@ -17,7 +17,7 @@ import { AdminService } from './admin.service';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { AdminFactoryService } from './factory';
 import { IsNumber } from 'class-validator';
-import { ActiveAccountDto as ActiveAccountDto } from './dto/create-admin.dto';
+import { ActiveAccountDto as ActiveAccountDto, ActiveHospitalDto } from './dto/create-admin.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from '@common/upload';
 
@@ -105,6 +105,15 @@ export class AdminController {
       data: { doctor },
     };
   }
+  @Patch('hospital/:id/active')
+  async activeHospital(@Param('id') id: string, @Body() dto: ActiveHospitalDto) {
+    const hospital = await this.adminService.activeHospital(id, dto);
+    return {
+      message: 'hospital activated successfully',
+      success: 'true',
+      data: { hospital },
+    };
+  }
   @Delete('doctors/:id')
   async deleteDoctor(@Param('id') id: string) {
     await this.adminService.deleteDoctor(id);
@@ -119,6 +128,24 @@ export class AdminController {
     return {
       message: 'patient deleted successfully',
       success: 'true',
+    };
+  }
+  @Get('hospital/:id')
+  async getHospitalById(@Param('id') id: string) {
+    const hospital = await this.adminService.getHospitalById(id);
+    return {
+      message: 'hospital retrieved successfully',
+      success: 'true',
+      data: { hospital },
+    };
+  }
+  @Get('hospital')
+  async getHospitals() {
+    const hospitals = await this.adminService.getHospitals();
+    return {
+      message: 'hospital retrieved successfully',
+      success: 'true',
+      data: { hospitals},
     };
   }
 }

@@ -1,4 +1,4 @@
-import { AppointmentStatus } from '@models/index';
+import { AppointmentStatus, ImageType, VisitType } from '@models/index';
 import { Types } from 'mongoose';
 
 export class Appointment {
@@ -12,4 +12,6 @@ export class Appointment {
   status: AppointmentStatus;
   notes?: string;
   queueNumber?: number;
+  visitingType: VisitType;
+  image: ImageType;
 }

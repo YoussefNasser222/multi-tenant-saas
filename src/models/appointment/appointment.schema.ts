@@ -1,3 +1,4 @@
+import { ImageType } from '@models/doctor/doctor.schema';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaTypes, Types } from 'mongoose';
 
@@ -7,6 +8,10 @@ export enum AppointmentStatus {
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
   WAITLISTED = 'waitlisted',
+}
+export enum VisitType {
+  NEW = 'NEW',
+  FOLLOW_UP = 'FOLLOW_UP',
 }
 @Schema({ timestamps: true })
 export class Appointment {
@@ -34,6 +39,10 @@ export class Appointment {
   notes?: string;
   @Prop({ type: Number })
   queueNumber?: number;
+  @Prop({ type: String, enum: VisitType , default : VisitType.NEW, required: true })
+  visitingType: VisitType;
+  @Prop({type : ImageType})
+  image : ImageType
 }
 
 export const appointmentSchema = SchemaFactory.createForClass(Appointment);

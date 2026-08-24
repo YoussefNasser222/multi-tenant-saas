@@ -23,6 +23,7 @@ export class MedicalRecordFactoryService {
     medicalRecord.notes = dto.notes || '';
     medicalRecord.prescriptionImageUrl = dto.prescriptionImageUrl || '';
     medicalRecord.visibility = dto.visibility || RecordVisibility.PRIVATE;
+    medicalRecord.prescriptionImageUrl = dto.prescriptionImageUrl || '';
     return medicalRecord;
   }
 }

@@ -27,3 +27,13 @@ export * from './medicalRecord/medicalRecord.repository';
 
 export * from './notification/notification.schema';
 export * from './notification/notification.repository';
+
+export * from './hospital/hospital.schema';
+export * from './hospital/hospital.repository';
+
+export * from "./general-notification/general-notification.repository"
+export * from "./general-notification/general-notification.schema"
+
+export * from "./emergency-case/emergency-case.repository"
+export * from "./emergency-case/emergency-case.schema"
+

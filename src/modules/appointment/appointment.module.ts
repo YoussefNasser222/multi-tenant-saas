@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AppointmentFactoryService } from './factory';
 import { DoctorModule } from '@modules/doctor/doctor.module';
 import { HttpModule } from '@nestjs/axios';
+import { UploadModule } from '@common/upload';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HttpModule } from '@nestjs/axios';
     ]),
     HttpModule.register({}),
     forwardRef(() => DoctorModule),
+    UploadModule,
   ],
   controllers: [AppointmentController],
   providers: [

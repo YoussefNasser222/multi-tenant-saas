@@ -5,6 +5,6 @@ export const ROLE = "ROLE";
 export const Roles = (value : string[])=>SetMetadata(ROLE, value)
 
 /**
- * Role(['Admin', 'Doctor' , 'Patient'])
+ * Role(['Admin', 'Doctor' , 'Patient' , 'Hospital'])
  * 
 */

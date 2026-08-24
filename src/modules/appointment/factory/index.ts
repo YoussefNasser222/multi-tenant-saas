@@ -4,7 +4,7 @@ import {
   BookingType,
   ClinicRepository,
   DoctorRepository,
-  PatientRepository,
+  PatientRepository
 } from '@models/index';
 import {
   BadRequestException,
@@ -27,7 +27,6 @@ export class AppointmentFactoryService {
     private readonly appointmentRepo: AppointmentRepository,
     private readonly clinicRepo: ClinicRepository,
   ) {}
-  // factory/index.ts — createAppointmentByPatient
   async createAppointmentByPatient(
     dto: CreateAppointmentPatientDto,
     user: any,
@@ -48,6 +47,7 @@ export class AppointmentFactoryService {
     appointment.patientId = user._id;
     appointment.date = dto.date;
     appointment.notes = dto.notes || '';
+    appointment.visitingType = dto.visitingType;
 
     const dayStart = new Date(dto.date);
     dayStart.setHours(0, 0, 0, 0);
@@ -130,6 +130,7 @@ export class AppointmentFactoryService {
     appointment.patientId = new Types.ObjectId(patientId);
     appointment.date = dto.date;
     appointment.notes = dto.notes || '';
+    appointment.visitingType = dto.visitingType
 
     const dayStart = new Date(dto.date);
     dayStart.setHours(0, 0, 0, 0);

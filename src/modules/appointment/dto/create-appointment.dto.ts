@@ -1,7 +1,10 @@
+import { VisitType } from '@models/index';
 import { Transform } from 'class-transformer';
 import {
   IsDate,
+  IsEnum,
   IsMongoId,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -30,6 +33,8 @@ export class CreateAppointmentPatientDto {
     message: 'startTime must be in HH:mm format (e.g. 14:30)',
   })
   startTime?: string;
+  @IsEnum(VisitType)
+  visitingType: VisitType;
 }
 
 export class CreateAppointmentDoctorDto {
@@ -47,4 +52,8 @@ export class CreateAppointmentDoctorDto {
     message: 'startTime must be in HH:mm format (e.g. 14:30)',
   })
   startTime?: string;
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(VisitType)
+  visitingType: VisitType;
 }

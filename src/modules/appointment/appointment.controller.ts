@@ -7,12 +7,18 @@ import {
   Param,
   Post,
   Put,
-  UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
-import { CreateAppointmentDoctorDto, CreateAppointmentPatientDto } from './dto/create-appointment.dto';
+import {
+  CreateAppointmentDoctorDto,
+  CreateAppointmentPatientDto,
+} from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentFactoryService } from './factory';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('appointment')
 export class AppointmentController {
@@ -44,13 +50,13 @@ export class AppointmentController {
   async createAppointmentByDoctor(
     @Body() createAppointmentDto: CreateAppointmentDoctorDto,
     @User() user: any,
-    @Param('id') id : string
+    @Param('id') id: string,
   ) {
     const appointment =
       await this.appointmentFactoryService.createAppointmentByDoctor(
         createAppointmentDto,
         user,
-        id
+        id,
       );
     const createdAppointment =
       await this.appointmentService.createAppointment(appointment);
@@ -68,6 +74,29 @@ export class AppointmentController {
       message: 'appointment deleted successfully',
       success: true,
     };
+  }
+  @Get('patient')
+  @Auth(['Patient'])
+  async getMyAllAppointmentsByPatient(@User() user: any) {
+    const appointments =
+      await this.appointmentService.getMyAllAppointmentsByPatient(user);
+    return {
+      message: 'data retrieved successfully',
+      success: true,
+      data: { appointments },
+    };
+  }
+  @Put('patient/:id')
+  @Auth(['Patient'])
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('image'))
+  async uploadImage(@UploadedFile() file : Express.Multer.File , @Param('id') id : string , @User() user : any){
+    const appointment = await this.appointmentService.uploadImage(file,id,user)
+    return {
+      message : "image uploaded successfully",
+      success : true,
+      data : {appointment}
+    }
   }
   @Get(':id')
   @Paid(['Doctor'])
