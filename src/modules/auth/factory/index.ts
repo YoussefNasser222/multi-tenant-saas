@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { CreateAdminDto, CreateDoctorDto, CreatePatientDto } from '../dto/create-auth.dto';
-import { Admin, Doctor, Hospital, Patient } from '../entities/auth.entity';
+import { CreateDoctorDto, CreatePatientDto } from '../dto/create-auth.dto';
+import { Doctor, Hospital, Patient } from '../entities/auth.entity';
 import { CreateHospitalDto } from '../dto/create-hospital.dto';
 import { UpdateHospitalDto } from '../dto/update-hospital.dto';
 
@@ -20,17 +20,6 @@ export class AuthFactoryService {
     doctor.otp = '';
     doctor.otpExpired = new Date();
     return doctor;
-  }
-  async createAdmin(createAdminDto: CreateAdminDto) {
-    const admin = new Admin();
-    admin.nationalId = createAdminDto.nationalId;
-    admin.password = await bcrypt.hash(createAdminDto.password, 10);
-    admin.email = createAdminDto.email;
-    admin.firstName = createAdminDto.firstName;
-    admin.lastName = createAdminDto.lastName;
-    admin.otp = '';
-    admin.otpExpired = new Date();
-    return admin;
   }
   async createPatient(createPatientDto: CreatePatientDto, user: any) {
     const patient = new Patient();

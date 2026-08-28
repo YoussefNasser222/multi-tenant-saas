@@ -32,25 +32,6 @@ export class CreateDoctorDto {
   phoneNumber: string;
 }
 
-export class CreateAdminDto {
-  @IsString()
-  @IsNotEmpty()
-  @IsEgyptianNationalId()
-  nationalId: string;
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(5)
-  password: string;
-  @IsString()
-  @IsNotEmpty()
-  firstName: string;
-  @IsString()
-  @IsNotEmpty()
-  lastName: string;
-  @IsEmail()
-  email: string;
-}
-
 export class CreatePatientDto {
   @IsString()
   @IsNotEmpty()

@@ -2,7 +2,7 @@ import { Paid, User } from '@common/decorators';
 import { Body, Controller, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { CreateAdminDto, CreateDoctorDto, CreatePatientDto, LoginDto, ResetPasswordDto } from './dto/create-auth.dto';
+import { CreateDoctorDto, CreatePatientDto, LoginDto, ResetPasswordDto } from './dto/create-auth.dto';
 import { AuthFactoryService } from './factory';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 
@@ -11,17 +11,6 @@ export class AuthController {
   constructor(private readonly authService: AuthService,
     private readonly authFactoryService: AuthFactoryService
   ) { }
-  @Post('register/admin')
-  @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async createAdmin(@Body() createAdminDto: CreateAdminDto) {
-    const admin = await this.authFactoryService.createAdmin(createAdminDto);
-    const createdAdmin = await this.authService.createAdmin(admin);
-    return {
-      message: "admin created successfully",
-      success: true,
-      data: { createdAdmin }
-    };
-  }
   @Post('register/hospital')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   async createHospital(@Body() createHospitalDto: CreateHospitalDto) {

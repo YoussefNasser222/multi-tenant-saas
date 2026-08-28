@@ -1,6 +1,5 @@
 import { generateOtp, generateOtpExpire, sendMail } from '@common/helpers';
 import {
-  AdminRepository,
   DoctorRepository,
   HospitalRepository,
   PatientRepository,
@@ -17,7 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginDto, ResetPasswordDto } from './dto/create-auth.dto';
-import { Admin, Doctor, Hospital, Patient } from './entities/auth.entity';
+import { Doctor, Hospital, Patient } from './entities/auth.entity';
 
 @Injectable()
 export class AuthService {
@@ -29,19 +28,7 @@ export class AuthService {
     private readonly tokenRepo: TokenRepository,
     private readonly configService: ConfigService,
     private readonly hospitalRepo: HospitalRepository,
-    private readonly adminRepo: AdminRepository,
   ) {}
-  async createAdmin(admin: Admin) {
-    const userExist = await this.userRepo.getOne({
-      nationalId: admin.nationalId,
-    });
-    if (userExist) {
-      throw new ConflictException('admin already exist');
-    }
-    const newAdmin = await this.adminRepo.create(admin);
-    const { password, otp, otpExpired, ...other } = newAdmin.toObject();
-    return other;
-  }
   async createDoctor(doctor: Doctor) {
     const userExist = await this.userRepo.getOne({
       nationalId: doctor.nationalId,
