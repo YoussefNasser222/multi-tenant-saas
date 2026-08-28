@@ -15,16 +15,16 @@ export class HospitalService {
     if(!updatedHospital){
       throw new NotFoundException('hospital not found')
     }
-    const {password , otp , otpExpired , isPaid , ...other} = updatedHospital.toObject()
+    const { password, otp, otpExpired, ...other } = updatedHospital.toObject();
     return other;
   }
   
   async findOne(user: any) {
     const hospital = await this.hospitalRepo.getOne({ _id: user._id });
-    if(!hospital){
-      throw new NotFoundException('hospital not found')
+    if (!hospital) {
+      throw new NotFoundException('hospital not found');
     }
-    const {password , otp , otpExpired , isPaid , ...other} = hospital.toObject()
+    const { password, otp, otpExpired, ...other } = hospital.toObject();
     return other;
   }
 }
