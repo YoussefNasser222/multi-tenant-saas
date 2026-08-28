@@ -43,3 +43,15 @@ export class Hospital {
   otp: string;
   otpExpired: Date;
 }
+
+export class Admin {
+  readonly _id: Types.ObjectId;
+  nationalId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  otp: string;
+  otpExpired: Date;
+}
+
