@@ -58,26 +58,31 @@ export class CreateClinicDto {
   @IsNumber()
   @IsNotEmpty()
   consultationPrice: number;
+  @IsOptional()
   @IsArray()
   @Type(() => WorkingDayDto)
   @ValidateNested({ each: true })
-  workingDays: WorkingDayDto[];
+  workingDays?: WorkingDayDto[];
   @IsOptional()
   @IsString()
-  address: string;
+  address?: string;
+  @IsOptional()
   @IsEnum(BookingType)
-  bookingType: BookingType;
+  bookingType?: BookingType;
 
   @ValidateIf((o) => o.bookingType === BookingType.TIME)
+  @IsOptional()
   @IsInt()
   @Min(5)
   slotDuration?: number;
 
+  @IsOptional()
   @IsInt()
   @Min(1)
-  maxPatientsPerDay: number;
+  maxPatientsPerDay?: number;
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   @Min(0)
-  followUpPrice: number;
+  followUpPrice?: number;
 }
+

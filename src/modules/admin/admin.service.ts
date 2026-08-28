@@ -66,7 +66,7 @@ export class AdminService {
       { select: '-password' },
     );
     if (!doctors || doctors.length === 0) {
-      throw new NotFoundException('doctors not found');
+      return [];
     }
     return doctors;
   }
@@ -84,7 +84,7 @@ export class AdminService {
   async getClinics() {
     const clinics = await this.clinicRepo.getAll();
     if (!clinics || clinics.length === 0) {
-      throw new NotFoundException('clinics not found');
+      return [];
     }
     return clinics;
   }

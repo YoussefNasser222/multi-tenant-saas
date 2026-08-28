@@ -55,12 +55,15 @@ export class DoctorFactoryService {
     clinic.specialization = createClinicDto.specialization;
     clinic.consultationPrice = createClinicDto.consultationPrice;
     clinic.doctorId = doctor._id;
-    clinic.workingDays = createClinicDto.workingDays;
+    clinic.workingDays = createClinicDto.workingDays || [];
     clinic.address = createClinicDto.address || '';
-    clinic.bookingType = createClinicDto.bookingType;
-    clinic.slotDuration = createClinicDto.slotDuration;
-    clinic.maxPatientsPerDay = createClinicDto.maxPatientsPerDay;
-    clinic.followUpPrice = createClinicDto.followUpPrice;
+    clinic.bookingType = createClinicDto.bookingType || ('queue' as any);
+    clinic.slotDuration = createClinicDto.slotDuration || 30;
+    clinic.maxPatientsPerDay = createClinicDto.maxPatientsPerDay || 20;
+    clinic.followUpPrice =
+      createClinicDto.followUpPrice != null
+        ? createClinicDto.followUpPrice
+        : createClinicDto.consultationPrice;
     return clinic;
   }
   async updateClinic(updateClinicDto: UpdatedClinicDto, doctor: any) {

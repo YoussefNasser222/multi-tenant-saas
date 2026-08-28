@@ -33,8 +33,9 @@ export class CreateAppointmentPatientDto {
     message: 'startTime must be in HH:mm format (e.g. 14:30)',
   })
   startTime?: string;
+  @IsOptional()
   @IsEnum(VisitType)
-  visitingType: VisitType;
+  visitingType?: VisitType;
 }
 
 export class CreateAppointmentDoctorDto {
@@ -52,8 +53,7 @@ export class CreateAppointmentDoctorDto {
     message: 'startTime must be in HH:mm format (e.g. 14:30)',
   })
   startTime?: string;
-  @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(VisitType)
-  visitingType: VisitType;
+  visitingType?: VisitType;
 }

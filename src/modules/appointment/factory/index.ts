@@ -4,7 +4,8 @@ import {
   BookingType,
   ClinicRepository,
   DoctorRepository,
-  PatientRepository
+  PatientRepository,
+  VisitType,
 } from '@models/index';
 import {
   BadRequestException,
@@ -47,7 +48,20 @@ export class AppointmentFactoryService {
     appointment.patientId = user._id;
     appointment.date = dto.date;
     appointment.notes = dto.notes || '';
-    appointment.visitingType = dto.visitingType;
+    let patientVisitingType: VisitType;
+    if (dto.visitingType) {
+      patientVisitingType = dto.visitingType;
+    } else {
+      const prevAppt = await this.appointmentRepo.getOne({
+        doctorId: dto.doctorId,
+        patientId: user._id,
+        status: {
+          $in: [AppointmentStatus.COMPLETED, AppointmentStatus.CONFIRMED],
+        },
+      });
+      patientVisitingType = prevAppt ? VisitType.FOLLOW_UP : VisitType.NEW;
+    }
+    appointment.visitingType = patientVisitingType;
 
     const dayStart = new Date(dto.date);
     dayStart.setHours(0, 0, 0, 0);
@@ -130,7 +144,21 @@ export class AppointmentFactoryService {
     appointment.patientId = new Types.ObjectId(patientId);
     appointment.date = dto.date;
     appointment.notes = dto.notes || '';
-    appointment.visitingType = dto.visitingType
+    
+    let doctorVisitingType: VisitType;
+    if (dto.visitingType) {
+      doctorVisitingType = dto.visitingType;
+    } else {
+      const prevAppt = await this.appointmentRepo.getOne({
+        doctorId: user._id,
+        patientId: new Types.ObjectId(patientId),
+        status: {
+          $in: [AppointmentStatus.COMPLETED, AppointmentStatus.CONFIRMED],
+        },
+      });
+      doctorVisitingType = prevAppt ? VisitType.FOLLOW_UP : VisitType.NEW;
+    }
+    appointment.visitingType = doctorVisitingType;
 
     const dayStart = new Date(dto.date);
     dayStart.setHours(0, 0, 0, 0);
