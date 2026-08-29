@@ -157,6 +157,13 @@ export class AdminService {
     }
     return patient;
   }
+  async deleteHospital(id: string) {
+    const hospital = await this.hospitalRepo.deleteOne({ _id: id });
+    if (hospital.deletedCount === 0) {
+      throw new NotFoundException('hospital not found');
+    }
+    return hospital;
+  }
   async getHospitals() {
     const hospitals = await this.hospitalRepo.getAll(
       {},

@@ -130,6 +130,14 @@ export class AdminController {
       success: 'true',
     };
   }
+  @Delete('hospital/:id')
+  async deleteHospital(@Param('id') id: string) {
+    await this.adminService.deleteHospital(id);
+    return {
+      message: 'hospital deleted successfully',
+      success: 'true',
+    };
+  }
   @Get('hospital/:id')
   async getHospitalById(@Param('id') id: string) {
     const hospital = await this.adminService.getHospitalById(id);
