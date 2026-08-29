@@ -41,6 +41,8 @@ export class Appointment {
   queueNumber?: number;
   @Prop({ type: String, enum: VisitType , default : VisitType.NEW, required: true })
   visitingType: VisitType;
+  @Prop({ type: String })
+  contactPhone?: string;
   @Prop({type : ImageType})
   image : ImageType
 }

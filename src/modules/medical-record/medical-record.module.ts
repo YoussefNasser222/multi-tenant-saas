@@ -8,7 +8,14 @@ import { PrescriptionExtractorService } from './prescription-extractor.service';
 import { AppointmentModule } from '@modules/appointment/appointment.module';
 import { MedicalRecordFactoryService } from './factory';
 import { MongooseModule } from '@nestjs/mongoose';
-import { MedicalRecord, MedicalRecordRepository, medicalRecordSchema } from '@models/index';
+import {
+  MedicalRecord,
+  MedicalRecordRepository,
+  medicalRecordSchema,
+  PatientDocument,
+  PatientDocumentRepository,
+  patientDocumentSchema,
+} from '@models/index';
 
 @Module({
   imports: [
@@ -17,6 +24,7 @@ import { MedicalRecord, MedicalRecordRepository, medicalRecordSchema } from '@mo
     AppointmentModule,
     MongooseModule.forFeature([
       { name: MedicalRecord.name, schema: medicalRecordSchema },
+      { name: PatientDocument.name, schema: patientDocumentSchema },
     ]),
   ],
   controllers: [MedicalRecordController],
@@ -25,7 +33,9 @@ import { MedicalRecord, MedicalRecordRepository, medicalRecordSchema } from '@mo
     JwtService,
     PrescriptionExtractorService,
     MedicalRecordFactoryService,
-    MedicalRecordRepository
+    MedicalRecordRepository,
+    PatientDocumentRepository,
   ],
 })
 export class MedicalRecordModule {}
+

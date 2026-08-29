@@ -37,3 +37,5 @@ export * from "./general-notification/general-notification.schema"
 export * from "./emergency-case/emergency-case.repository"
 export * from "./emergency-case/emergency-case.schema"
 
+export * from './patientDocument/patientDocument.schema';
+export * from './patientDocument/patientDocument.repository';

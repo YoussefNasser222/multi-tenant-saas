@@ -48,6 +48,7 @@ export class AppointmentFactoryService {
     appointment.patientId = user._id;
     appointment.date = dto.date;
     appointment.notes = dto.notes || '';
+    appointment.contactPhone = dto.contactPhone || '';
     let patientVisitingType: VisitType;
     if (dto.visitingType) {
       patientVisitingType = dto.visitingType;

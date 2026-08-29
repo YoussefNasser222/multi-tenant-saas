@@ -27,6 +27,7 @@ export class MedicalRecordController {
     private readonly medicalRecordService: MedicalRecordService,
     private readonly medicalRecordFactoryService: MedicalRecordFactoryService,
   ) {}
+
   @Post('extract')
   @Paid(['Doctor'])
   @UseInterceptors(FileInterceptor('image'))
@@ -43,6 +44,7 @@ export class MedicalRecordController {
       },
     };
   }
+
   @Post()
   @Paid(['Doctor'])
   async create(@Body() dto: CreateMedicalRecordDto, @User() user: any) {
@@ -56,6 +58,7 @@ export class MedicalRecordController {
       data: createdMedicalRecord,
     };
   }
+
   @Get(':id')
   @Paid(['Doctor'])
   async getById(@Param('id') id: string, @User() user: any) {
@@ -66,6 +69,7 @@ export class MedicalRecordController {
       data: { medicalRecord },
     };
   }
+
   @Get('patient/:id')
   @Paid(['Doctor'])
   async getMedicalRecord(@User() user: any, @Param('id') id: string) {
@@ -79,6 +83,7 @@ export class MedicalRecordController {
       data: { medicalRecords },
     };
   }
+
   @Get()
   @Auth(['Patient'])
   async getMyMedicalRecord(@User() user: any) {
@@ -88,6 +93,48 @@ export class MedicalRecordController {
       message: 'data retrieved successfully',
       success: true,
       data: { medicalRecords },
+    };
+  }
+
+  // ── Patient Document Upload ──────────────────────────────
+  @Post('patient/upload')
+  @Auth(['Patient'])
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadPatientDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @User() user: any,
+  ) {
+    const doc = await this.medicalRecordService.uploadPatientDocument(file, user);
+    return {
+      message: 'Document uploaded successfully',
+      success: true,
+      data: { document: doc },
+    };
+  }
+
+  @Get('patient/my-documents')
+  @Auth(['Patient'])
+  async getMyDocuments(@User() user: any) {
+    const documents = await this.medicalRecordService.getMyDocuments(user);
+    return {
+      message: 'data retrieved successfully',
+      success: true,
+      data: { documents },
+    };
+  }
+
+  @Get('patient/documents/:patientId')
+  @Paid(['Doctor'])
+  async getPatientDocuments(
+    @User() user: any,
+    @Param('patientId') patientId: string,
+  ) {
+    const documents = await this.medicalRecordService.getPatientDocuments(user, patientId);
+    return {
+      message: 'data retrieved successfully',
+      success: true,
+      data: { documents },
     };
   }
 }

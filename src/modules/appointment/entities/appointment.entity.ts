@@ -13,5 +13,6 @@ export class Appointment {
   notes?: string;
   queueNumber?: number;
   visitingType: VisitType;
+  contactPhone?: string;
   image: ImageType;
 }

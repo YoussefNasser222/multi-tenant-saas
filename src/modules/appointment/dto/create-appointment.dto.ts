@@ -36,6 +36,9 @@ export class CreateAppointmentPatientDto {
   @IsOptional()
   @IsEnum(VisitType)
   visitingType?: VisitType;
+  @IsOptional()
+  @IsString()
+  contactPhone?: string;
 }
 
 export class CreateAppointmentDoctorDto {
