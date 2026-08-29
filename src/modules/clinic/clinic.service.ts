@@ -23,8 +23,11 @@ export class ClinicService {
     return paidClinics;
   }
   async getClinicById(id: string) {
-    const clinic = await this.clinicRepo.getOne({ _id: id },{},{
-      populate : 'doctorId' , select : "firstName lastName image"
+    const clinic = await this.clinicRepo.getOne({ _id: id }, {}, {
+      populate: {
+        path: 'doctorId',
+        select: 'firstName lastName image',
+      },
     });
     if (!clinic) {
       throw new NotFoundException('clinic not found');
