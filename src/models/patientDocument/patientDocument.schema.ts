@@ -12,6 +12,18 @@ export class PatientDocument {
   publicId: string;
   @Prop({ type: String })
   fileName?: string;
+  /* دكتور مستهدف */
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Doctor' })
+  targetDoctorId?: Types.ObjectId;
+  /* ملاحظات المريض */
+  @Prop({ type: String })
+  patientNotes?: string;
+  /* تحليل AI */
+  @Prop({ type: String })
+  aiAnalysis?: string;
+  /* فرد الأسرة */
+  @Prop({ type: String })
+  familyMemberName?: string;
 }
 
 export const patientDocumentSchema = SchemaFactory.createForClass(PatientDocument);

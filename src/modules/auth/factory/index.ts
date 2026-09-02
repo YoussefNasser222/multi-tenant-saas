@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateDoctorDto, CreatePatientDto } from '../dto/create-auth.dto';
 import { Doctor, Hospital, Patient } from '../entities/auth.entity';
 import { CreateHospitalDto } from '../dto/create-hospital.dto';
-import { UpdateHospitalDto } from '../dto/update-hospital.dto';
+import { CreateFamilyPatientDto } from '../dto/create-family.dto';
 
 @Injectable()
 export class AuthFactoryService {
@@ -21,7 +21,9 @@ export class AuthFactoryService {
     doctor.otpExpired = new Date();
     return doctor;
   }
-  async createPatient(createPatientDto: CreatePatientDto, user: any) {
+
+  /* مريض فردي — user اختياري (طبيب أو تسجيل عام) */
+  async createPatient(createPatientDto: CreatePatientDto, user?: any) {
     const patient = new Patient();
     patient.nationalId = createPatientDto.nationalId;
     patient.password = await bcrypt.hash(createPatientDto.password, 10);
@@ -31,9 +33,28 @@ export class AuthFactoryService {
     patient.phoneNumber = createPatientDto.phoneNumber;
     patient.otp = '';
     patient.otpExpired = new Date();
-    patient.createdBy = user._id;
+    patient.createdBy = user?._id;
+    patient.isFamily = false;
+    patient.familyMembers = [];
     return patient;
   }
+
+  /* تسجيل أسرة — رقم قومي واحد + أفراد */
+  async createFamilyPatient(dto: CreateFamilyPatientDto) {
+    const patient = new Patient();
+    patient.nationalId = dto.nationalId;
+    patient.password = await bcrypt.hash(dto.password, 10);
+    patient.email = dto.email;
+    patient.firstName = dto.familyMembers[0].name.split(' ')[0] ?? 'رب';
+    patient.lastName = dto.familyMembers[0].name.split(' ').slice(1).join(' ') || 'الأسرة';
+    patient.phoneNumber = dto.familyMembers[0].phoneNumber;
+    patient.otp = '';
+    patient.otpExpired = new Date();
+    patient.isFamily = true;
+    patient.familyMembers = dto.familyMembers;
+    return patient;
+  }
+
   async createHospital(dto: CreateHospitalDto) {
     const hospital = new Hospital();
     hospital.nationalId = dto.nationalId;
@@ -50,5 +71,5 @@ export class AuthFactoryService {
     hospital.otpExpired = new Date();
     return hospital;
   }
-  
 }
+

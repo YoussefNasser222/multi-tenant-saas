@@ -103,9 +103,10 @@ export class MedicalRecordController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadPatientDocument(
     @UploadedFile() file: Express.Multer.File,
+    @Body() body: any,
     @User() user: any,
   ) {
-    const doc = await this.medicalRecordService.uploadPatientDocument(file, user);
+    const doc = await this.medicalRecordService.uploadPatientDocument(file, body, user);
     return {
       message: 'Document uploaded successfully',
       success: true,

@@ -99,17 +99,37 @@ export class MedicalRecordService {
   }
 
   // ── Patient Document Upload ──────────────────────────────
-  async uploadPatientDocument(file: Express.Multer.File, user: any) {
+  async uploadPatientDocument(file: Express.Multer.File, body: any, user: any) {
     if (!file) throw new BadRequestException('File is required');
     const uploaded = await this.uploadService.uploadFileToCloud(
       file,
       `Multi-Tenant/patient-documents/${user._id}`,
     );
+
+    let aiAnalysis = '';
+    try {
+      if (file.mimetype.startsWith('image/')) {
+        const extracted = await this.prescriptionExtractorService.extractFromImage(
+          file.buffer,
+          file.mimetype,
+        );
+        if (extracted) {
+          aiAnalysis = `تشخيص مبدئي: ${extracted.diagnosis}\nأدوية: ${extracted.medications?.map(m => m.name).join(', ') ?? 'لا يوجد'}\nملاحظات: ${extracted.notes}`;
+        }
+      }
+    } catch (err) {
+      // AI fail ignore
+    }
+
     return this.patientDocumentRepo.create({
       patientId: user._id,
       fileUrl: uploaded.secure_url,
       publicId: uploaded.public_id,
       fileName: file.originalname,
+      targetDoctorId: body.targetDoctorId,
+      patientNotes: body.patientNotes,
+      familyMemberName: body.familyMemberName,
+      aiAnalysis,
     });
   }
 

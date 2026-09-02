@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query } from '@nestjs/common';
 import { PatientService } from './patient.service';
 import { Auth, Paid, User } from '@common/decorators';
 import { UpdatedPatientDto } from '@modules/auth/dto/update-auth.dto';
@@ -10,6 +10,7 @@ export class PatientController {
     private readonly patientService: PatientService,
     private readonly patientFactoryService: PatientFactoryService,
   ) {}
+
   @Get()
   @Auth(['Patient'])
   async getProfile(@User() user: any) {
@@ -20,6 +21,7 @@ export class PatientController {
       data: { patient },
     };
   }
+
   @Put(':id')
   @Paid(['Doctor'])
   async updatePatientById(
@@ -27,24 +29,22 @@ export class PatientController {
     @Body() updatePatientDto: UpdatedPatientDto,
     @Param('id') id: string,
   ) {
-    const patient = await this.patientFactoryService.updatePatientById(id , updatePatientDto)
-    const updatedPatient = await this.patientService.updatePatientById(patient, user , id);
+    const patient = await this.patientFactoryService.updatePatientById(id, updatePatientDto)
+    const updatedPatient = await this.patientService.updatePatientById(patient, user, id);
     return {
       message: 'patient updated successfully',
       success: true,
       data: { updatedPatient },
     };
   }
+
   @Put()
   @Auth(['Patient'])
   async updateMe(
     @User() user: any,
     @Body() updatePatientDto: UpdatedPatientDto,
   ) {
-    const patient = await this.patientFactoryService.update(
-      user,
-      updatePatientDto,
-    );
+    const patient = await this.patientFactoryService.update(user, updatePatientDto);
     const updatedPatient = await this.patientService.updateMe(patient, user);
     return {
       message: 'patient updated successfully',
@@ -52,6 +52,7 @@ export class PatientController {
       data: { updatedPatient },
     };
   }
+
   @Get('lookup/:id')
   @Paid(['Doctor'])
   async getPatientByNationalId(@Param('id') id: string) {
@@ -62,6 +63,7 @@ export class PatientController {
       data: { patient },
     };
   }
+
   @Get('my-patients')
   @Paid(['Doctor'])
   async getMyPatients(@User() user: any) {
@@ -72,6 +74,22 @@ export class PatientController {
       data: { patients },
     };
   }
+
+  /* مرضى النظام غير المسجلين عند هذا الدكتور */
+  @Get('non-clinic-patients')
+  @Paid(['Doctor'])
+  async getNonClinicPatients(
+    @User() user: any,
+    @Query('search') search?: string,
+  ) {
+    const patients = await this.patientService.getNonClinicPatients(user, search);
+    return {
+      message: 'data retrieved successfully',
+      success: true,
+      data: { patients },
+    };
+  }
+
   @Get('my-patient/:id')
   @Paid(['Doctor'])
   async getMyPatientById(@User() user: any, @Param('id') id: string) {

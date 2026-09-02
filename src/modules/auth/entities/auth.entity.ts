@@ -25,7 +25,9 @@ export class Patient {
   password: string;
   otp: string;
   otpExpired: Date;
-  createdBy: Types.ObjectId;
+  createdBy?: Types.ObjectId;
+  isFamily?: boolean;
+  familyMembers?: { name: string; phoneNumber: string }[];
 }
 
 export class Hospital {
