@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
@@ -96,7 +97,7 @@ export class MedicalRecordController {
     };
   }
 
-  // ── Patient Document Upload ──────────────────────────────
+  // ── Patient Document Upload / Manage ──────────────────────
   @Post('patient/upload')
   @Auth(['Patient'])
   @Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -108,9 +109,40 @@ export class MedicalRecordController {
   ) {
     const doc = await this.medicalRecordService.uploadPatientDocument(file, body, user);
     return {
-      message: 'Document uploaded successfully',
+      message: 'Document saved successfully',
       success: true,
       data: { document: doc },
+    };
+  }
+
+  @Put('patient/document/:id')
+  @Auth(['Patient'])
+  @UseInterceptors(FileInterceptor('file'))
+  async updatePatientDocument(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: any,
+    @User() user: any,
+  ) {
+    const updated = await this.medicalRecordService.updatePatientDocument(id, file, body, user);
+    return {
+      message: 'Document updated successfully',
+      success: true,
+      data: { document: updated },
+    };
+  }
+
+  @Delete('patient/document/:id')
+  @Auth(['Patient'])
+  async deletePatientDocument(
+    @Param('id') id: string,
+    @User() user: any,
+  ) {
+    await this.medicalRecordService.deletePatientDocument(id, user);
+    return {
+      message: 'Document deleted successfully',
+      success: true,
+      data: null,
     };
   }
 

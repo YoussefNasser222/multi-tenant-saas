@@ -6,10 +6,10 @@ export class PatientDocument {
   readonly _id: Types.ObjectId;
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Patient', required: true })
   patientId: Types.ObjectId;
-  @Prop({ type: String, required: true })
-  fileUrl: string;
-  @Prop({ type: String, required: true })
-  publicId: string;
+  @Prop({ type: String })
+  fileUrl?: string;
+  @Prop({ type: String })
+  publicId?: string;
   @Prop({ type: String })
   fileName?: string;
   /* دكتور مستهدف */

@@ -99,37 +99,137 @@ export class MedicalRecordService {
   }
 
   // ── Patient Document Upload ──────────────────────────────
-  async uploadPatientDocument(file: Express.Multer.File, body: any, user: any) {
-    if (!file) throw new BadRequestException('File is required');
-    const uploaded = await this.uploadService.uploadFileToCloud(
-      file,
-      `Multi-Tenant/patient-documents/${user._id}`,
-    );
+  async uploadPatientDocument(file: Express.Multer.File | undefined, body: any, user: any) {
+    if (!file && !body.patientNotes?.trim()) {
+      throw new BadRequestException('يجب إرفاق ملف أو كتابة ملاحظات');
+    }
 
-    let aiAnalysis = '';
-    try {
-      if (file.mimetype.startsWith('image/')) {
-        const extracted = await this.prescriptionExtractorService.extractFromImage(
-          file.buffer,
-          file.mimetype,
-        );
-        if (extracted) {
-          aiAnalysis = `تشخيص مبدئي: ${extracted.diagnosis}\nأدوية: ${extracted.medications?.map(m => m.name).join(', ') ?? 'لا يوجد'}\nملاحظات: ${extracted.notes}`;
-        }
+    if (body.targetDoctorId) {
+      const appt = await this.appointmentRepo.getOne({
+        patientId: user._id,
+        doctorId: body.targetDoctorId,
+      });
+      if (!appt) {
+        throw new BadRequestException('لا يمكنك إرسال مستند لطبيب لم تقم بحجز موعد لديه مسبقاً');
       }
-    } catch (err) {
-      // AI fail ignore
+    }
+
+    let fileUrl: string | undefined;
+    let publicId: string | undefined;
+    let fileName: string | undefined;
+    let aiAnalysis = '';
+
+    if (file) {
+      const uploaded = await this.uploadService.uploadFileToCloud(
+        file,
+        `Multi-Tenant/patient-documents/${user._id}`,
+      );
+      fileUrl = uploaded.secure_url;
+      publicId = uploaded.public_id;
+      fileName = file.originalname;
+
+      try {
+        if (file.mimetype.startsWith('image/')) {
+          const extracted = await this.prescriptionExtractorService.extractFromImage(
+            file.buffer,
+            file.mimetype,
+          );
+          if (extracted) {
+            aiAnalysis = `تشخيص مبدئي: ${extracted.diagnosis}\nأدوية: ${extracted.medications?.map(m => m.name).join(', ') ?? 'لا يوجد'}\nملاحظات: ${extracted.notes}`;
+          }
+        }
+      } catch (err) {
+        // AI fail ignore
+      }
     }
 
     return this.patientDocumentRepo.create({
       patientId: user._id,
-      fileUrl: uploaded.secure_url,
-      publicId: uploaded.public_id,
-      fileName: file.originalname,
-      targetDoctorId: body.targetDoctorId,
-      patientNotes: body.patientNotes,
-      familyMemberName: body.familyMemberName,
-      aiAnalysis,
+      fileUrl,
+      publicId,
+      fileName,
+      targetDoctorId: body.targetDoctorId || undefined,
+      patientNotes: body.patientNotes || undefined,
+      familyMemberName: body.familyMemberName || undefined,
+      aiAnalysis: aiAnalysis || undefined,
+    });
+  }
+
+  async updatePatientDocument(id: string, file: Express.Multer.File | undefined, body: any, user: any) {
+    const doc = await this.patientDocumentRepo.getOne({
+      _id: id,
+      patientId: user._id,
+    });
+    if (!doc) {
+      throw new NotFoundException('المستند غير موجود أو ليس لديك صلاحية تعديله');
+    }
+
+    if (body.targetDoctorId && body.targetDoctorId !== doc.targetDoctorId?.toString()) {
+      const appt = await this.appointmentRepo.getOne({
+        patientId: user._id,
+        doctorId: body.targetDoctorId,
+      });
+      if (!appt) {
+        throw new BadRequestException('لا يمكنك ربط المستند بطبيب لم تقم بحجز موعد لديه مسبقاً');
+      }
+    }
+
+    const updateData: any = {};
+    if (body.patientNotes !== undefined) updateData.patientNotes = body.patientNotes;
+    if (body.familyMemberName !== undefined) updateData.familyMemberName = body.familyMemberName;
+    if (body.targetDoctorId !== undefined) updateData.targetDoctorId = body.targetDoctorId || null;
+
+    if (file) {
+      if (doc.publicId) {
+        try {
+          await this.uploadService.deleteFileFromCloud(doc.publicId);
+        } catch {}
+      }
+      const uploaded = await this.uploadService.uploadFileToCloud(
+        file,
+        `Multi-Tenant/patient-documents/${user._id}`,
+      );
+      updateData.fileUrl = uploaded.secure_url;
+      updateData.publicId = uploaded.public_id;
+      updateData.fileName = file.originalname;
+
+      try {
+        if (file.mimetype.startsWith('image/')) {
+          const extracted = await this.prescriptionExtractorService.extractFromImage(
+            file.buffer,
+            file.mimetype,
+          );
+          if (extracted) {
+            updateData.aiAnalysis = `تشخيص مبدئي: ${extracted.diagnosis}\nأدوية: ${extracted.medications?.map(m => m.name).join(', ') ?? 'لا يوجد'}\nملاحظات: ${extracted.notes}`;
+          }
+        }
+      } catch {}
+    }
+
+    return this.patientDocumentRepo.update(
+      { _id: id, patientId: user._id },
+      updateData,
+    );
+  }
+
+  async deletePatientDocument(id: string, user: any) {
+    const doc = await this.patientDocumentRepo.getOne({
+      _id: id,
+      patientId: user._id,
+    });
+    if (!doc) {
+      throw new NotFoundException('المستند غير موجود');
+    }
+
+    if (doc.publicId) {
+      try {
+        await this.uploadService.deleteFileFromCloud(doc.publicId);
+      } catch {}
+    }
+
+    return this.patientDocumentRepo.deleteOne({
+      _id: id,
+      patientId: user._id,
     });
   }
 
@@ -137,7 +237,10 @@ export class MedicalRecordService {
     return this.patientDocumentRepo.getAll(
       { patientId: user._id },
       {},
-      { sort: { createdAt: -1 } },
+      {
+        sort: { createdAt: -1 },
+        populate: { path: 'targetDoctorId', select: 'firstName lastName' },
+      },
     );
   }
 
@@ -150,7 +253,14 @@ export class MedicalRecordService {
       throw new ForbiddenException("Not authorized to view this patient's documents");
     }
     return this.patientDocumentRepo.getAll(
-      { patientId },
+      {
+        patientId,
+        $or: [
+          { targetDoctorId: doctorUser._id },
+          { targetDoctorId: { $exists: false } },
+          { targetDoctorId: null },
+        ],
+      },
       {},
       { sort: { createdAt: -1 } },
     );
