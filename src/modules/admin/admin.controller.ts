@@ -147,6 +147,15 @@ export class AdminController {
       data: { hospital },
     };
   }
+  @Get('patients')
+  async getPatients() {
+    const patients = await this.adminService.getPatients();
+    return {
+      message: 'patients retrieved successfully',
+      success: true,
+      data: { patients },
+    };
+  }
   @Get('hospital')
   async getHospitals() {
     const hospitals = await this.adminService.getHospitals();

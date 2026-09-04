@@ -164,6 +164,17 @@ export class AdminService {
     }
     return hospital;
   }
+  async getPatients() {
+    const patients = await this.patientRepo.getAll(
+      {},
+      {},
+      { select: '-password' },
+    );
+    if (!patients || patients.length === 0) {
+      return [];
+    }
+    return patients;
+  }
   async getHospitals() {
     const hospitals = await this.hospitalRepo.getAll(
       {},
