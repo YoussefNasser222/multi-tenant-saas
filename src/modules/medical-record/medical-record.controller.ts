@@ -33,9 +33,9 @@ export class MedicalRecordController {
   @Paid(['Doctor'])
   @UseInterceptors(FileInterceptor('image'))
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async extractPrescription(@UploadedFile() file: Express.Multer.File , @User() user : any) {
+  async extractPrescription(@UploadedFile() file: Express.Multer.File, @User() user: any) {
     const { uploaded, extracted } =
-      await this.medicalRecordService.extractPrescription(file , user);
+      await this.medicalRecordService.extractPrescription(file, user);
     return {
       message: 'extracted successfully, please review before saving',
       success: true,
@@ -46,58 +46,7 @@ export class MedicalRecordController {
     };
   }
 
-  @Post()
-  @Paid(['Doctor'])
-  async create(@Body() dto: CreateMedicalRecordDto, @User() user: any) {
-    const medicalRecord =
-      await this.medicalRecordFactoryService.createMedicalRecord(dto, user);
-    const createdMedicalRecord =
-      await this.medicalRecordService.create(medicalRecord);
-    return {
-      message: 'medical record created successfully',
-      success: true,
-      data: createdMedicalRecord,
-    };
-  }
-
-  @Get(':id')
-  @Paid(['Doctor'])
-  async getById(@Param('id') id: string, @User() user: any) {
-    const medicalRecord = await this.medicalRecordService.getById(id, user);
-    return {
-      message: 'data retrieved successfully',
-      success: true,
-      data: { medicalRecord },
-    };
-  }
-
-  @Get('patient/:id')
-  @Paid(['Doctor'])
-  async getMedicalRecord(@User() user: any, @Param('id') id: string) {
-    const medicalRecords = await this.medicalRecordService.getMedicalRecord(
-      user,
-      id,
-    );
-    return {
-      message: 'data retrieved successfully',
-      success: true,
-      data: { medicalRecords },
-    };
-  }
-
-  @Get()
-  @Auth(['Patient'])
-  async getMyMedicalRecord(@User() user: any) {
-    const medicalRecords =
-      await this.medicalRecordService.getMyMedicalRecord(user);
-    return {
-      message: 'data retrieved successfully',
-      success: true,
-      data: { medicalRecords },
-    };
-  }
-
-  // ── Patient Document Upload / Manage ──────────────────────
+  // ── Patient Document Upload / Manage (POST, PUT, DELETE) ──
   @Post('patient/upload')
   @Auth(['Patient'])
   @Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -146,6 +95,8 @@ export class MedicalRecordController {
     };
   }
 
+  // ── IMPORTANT: Specific GET routes MUST come BEFORE generic wildcard routes like patient/:id and :id ──
+
   @Get('patient/my-documents')
   @Auth(['Patient'])
   async getMyDocuments(@User() user: any) {
@@ -168,6 +119,58 @@ export class MedicalRecordController {
       message: 'data retrieved successfully',
       success: true,
       data: { documents },
+    };
+  }
+
+  @Get('patient/:id')
+  @Paid(['Doctor'])
+  async getMedicalRecord(@User() user: any, @Param('id') id: string) {
+    const medicalRecords = await this.medicalRecordService.getMedicalRecord(
+      user,
+      id,
+    );
+    return {
+      message: 'data retrieved successfully',
+      success: true,
+      data: { medicalRecords },
+    };
+  }
+
+  @Get()
+  @Auth(['Patient'])
+  async getMyMedicalRecord(@User() user: any) {
+    const medicalRecords =
+      await this.medicalRecordService.getMyMedicalRecord(user);
+    return {
+      message: 'data retrieved successfully',
+      success: true,
+      data: { medicalRecords },
+    };
+  }
+
+  @Post()
+  @Paid(['Doctor'])
+  async create(@Body() dto: CreateMedicalRecordDto, @User() user: any) {
+    const medicalRecord =
+      await this.medicalRecordFactoryService.createMedicalRecord(dto, user);
+    const createdMedicalRecord =
+      await this.medicalRecordService.create(medicalRecord);
+    return {
+      message: 'medical record created successfully',
+      success: true,
+      data: createdMedicalRecord,
+    };
+  }
+
+  // Generic record ID match - MUST be placed last of all GET routes
+  @Get(':id')
+  @Paid(['Doctor'])
+  async getById(@Param('id') id: string, @User() user: any) {
+    const medicalRecord = await this.medicalRecordService.getById(id, user);
+    return {
+      message: 'data retrieved successfully',
+      success: true,
+      data: { medicalRecord },
     };
   }
 }
