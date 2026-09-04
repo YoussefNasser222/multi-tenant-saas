@@ -253,16 +253,12 @@ export class MedicalRecordService {
       throw new ForbiddenException("Not authorized to view this patient's documents");
     }
     return this.patientDocumentRepo.getAll(
-      {
-        patientId,
-        $or: [
-          { targetDoctorId: doctorUser._id },
-          { targetDoctorId: { $exists: false } },
-          { targetDoctorId: null },
-        ],
-      },
+      { patientId },
       {},
-      { sort: { createdAt: -1 } },
+      {
+        sort: { createdAt: -1 },
+        populate: { path: 'targetDoctorId', select: 'firstName lastName' },
+      },
     );
   }
 }
