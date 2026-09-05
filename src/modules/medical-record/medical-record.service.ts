@@ -43,7 +43,7 @@ export class MedicalRecordService {
   async create(medicalRecord: MedicalRecord) {
     await this.appointmentRepo.update(
       { _id: medicalRecord.appointmentId },
-      { status: AppointmentStatus.CONFIRMED },
+      { status: AppointmentStatus.COMPLETED },
     );
     return await this.medicalRecordRepo.create(medicalRecord);
   }
@@ -99,7 +99,11 @@ export class MedicalRecordService {
   }
 
   // ── Patient Document Upload ──────────────────────────────
-  async uploadPatientDocument(file: Express.Multer.File | undefined, body: any, user: any) {
+  async uploadPatientDocument(
+    file: Express.Multer.File | undefined,
+    body: any,
+    user: any,
+  ) {
     if (!file && !body.patientNotes?.trim()) {
       throw new BadRequestException('يجب إرفاق ملف أو كتابة ملاحظات');
     }
@@ -110,7 +114,9 @@ export class MedicalRecordService {
         doctorId: body.targetDoctorId,
       });
       if (!appt) {
-        throw new BadRequestException('لا يمكنك إرسال مستند لطبيب لم تقم بحجز موعد لديه مسبقاً');
+        throw new BadRequestException(
+          'لا يمكنك إرسال مستند لطبيب لم تقم بحجز موعد لديه مسبقاً',
+        );
       }
     }
 
@@ -130,12 +136,13 @@ export class MedicalRecordService {
 
       try {
         if (file.mimetype.startsWith('image/')) {
-          const extracted = await this.prescriptionExtractorService.extractFromImage(
-            file.buffer,
-            file.mimetype,
-          );
+          const extracted =
+            await this.prescriptionExtractorService.extractFromImage(
+              file.buffer,
+              file.mimetype,
+            );
           if (extracted) {
-            aiAnalysis = `تشخيص مبدئي: ${extracted.diagnosis}\nأدوية: ${extracted.medications?.map(m => m.name).join(', ') ?? 'لا يوجد'}\nملاحظات: ${extracted.notes}`;
+            aiAnalysis = `تشخيص مبدئي: ${extracted.diagnosis}\nأدوية: ${extracted.medications?.map((m) => m.name).join(', ') ?? 'لا يوجد'}\nملاحظات: ${extracted.notes}`;
           }
         }
       } catch (err) {
@@ -155,29 +162,44 @@ export class MedicalRecordService {
     });
   }
 
-  async updatePatientDocument(id: string, file: Express.Multer.File | undefined, body: any, user: any) {
+  async updatePatientDocument(
+    id: string,
+    file: Express.Multer.File | undefined,
+    body: any,
+    user: any,
+  ) {
     const doc = await this.patientDocumentRepo.getOne({
       _id: id,
       patientId: user._id,
     });
     if (!doc) {
-      throw new NotFoundException('المستند غير موجود أو ليس لديك صلاحية تعديله');
+      throw new NotFoundException(
+        'المستند غير موجود أو ليس لديك صلاحية تعديله',
+      );
     }
 
-    if (body.targetDoctorId && body.targetDoctorId !== doc.targetDoctorId?.toString()) {
+    if (
+      body.targetDoctorId &&
+      body.targetDoctorId !== doc.targetDoctorId?.toString()
+    ) {
       const appt = await this.appointmentRepo.getOne({
         patientId: user._id,
         doctorId: body.targetDoctorId,
       });
       if (!appt) {
-        throw new BadRequestException('لا يمكنك ربط المستند بطبيب لم تقم بحجز موعد لديه مسبقاً');
+        throw new BadRequestException(
+          'لا يمكنك ربط المستند بطبيب لم تقم بحجز موعد لديه مسبقاً',
+        );
       }
     }
 
     const updateData: any = {};
-    if (body.patientNotes !== undefined) updateData.patientNotes = body.patientNotes;
-    if (body.familyMemberName !== undefined) updateData.familyMemberName = body.familyMemberName;
-    if (body.targetDoctorId !== undefined) updateData.targetDoctorId = body.targetDoctorId || null;
+    if (body.patientNotes !== undefined)
+      updateData.patientNotes = body.patientNotes;
+    if (body.familyMemberName !== undefined)
+      updateData.familyMemberName = body.familyMemberName;
+    if (body.targetDoctorId !== undefined)
+      updateData.targetDoctorId = body.targetDoctorId || null;
 
     if (file) {
       if (doc.publicId) {
@@ -195,12 +217,13 @@ export class MedicalRecordService {
 
       try {
         if (file.mimetype.startsWith('image/')) {
-          const extracted = await this.prescriptionExtractorService.extractFromImage(
-            file.buffer,
-            file.mimetype,
-          );
+          const extracted =
+            await this.prescriptionExtractorService.extractFromImage(
+              file.buffer,
+              file.mimetype,
+            );
           if (extracted) {
-            updateData.aiAnalysis = `تشخيص مبدئي: ${extracted.diagnosis}\nأدوية: ${extracted.medications?.map(m => m.name).join(', ') ?? 'لا يوجد'}\nملاحظات: ${extracted.notes}`;
+            updateData.aiAnalysis = `تشخيص مبدئي: ${extracted.diagnosis}\nأدوية: ${extracted.medications?.map((m) => m.name).join(', ') ?? 'لا يوجد'}\nملاحظات: ${extracted.notes}`;
           }
         }
       } catch {}
@@ -209,6 +232,7 @@ export class MedicalRecordService {
     return this.patientDocumentRepo.update(
       { _id: id, patientId: user._id },
       updateData,
+      { returnDocument: 'after' },
     );
   }
 
@@ -250,7 +274,9 @@ export class MedicalRecordService {
       doctorId: doctorUser._id,
     });
     if (!appt) {
-      throw new ForbiddenException("Not authorized to view this patient's documents");
+      throw new ForbiddenException(
+        "Not authorized to view this patient's documents",
+      );
     }
     return this.patientDocumentRepo.getAll(
       { patientId },

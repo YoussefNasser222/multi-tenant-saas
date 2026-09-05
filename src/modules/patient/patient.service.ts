@@ -22,13 +22,15 @@ export class PatientService {
   }
 
   async getPatientByNationalId(id: string) {
-    const patientExist = await this.patientRepo.getOne({
-      nationalId: id,
-      role: Role.Patient,
-    });
+    const patientExist = await this.patientRepo.getOne(
+      {
+        nationalId: id,
+        role: Role.Patient,
+      },
+      { firstName: 1, lastName: 1, _id: 1 },
+    );
     if (!patientExist) throw new NotFoundException('patient not found');
-    const { password, otp, otpExpired, phoneNumber, email, ...other } = patientExist.toObject();
-    return other;
+    return patientExist;
   }
 
   async getMyPatients(user: any) {
@@ -53,7 +55,9 @@ export class PatientService {
       { doctorId: user._id },
       { patientId: 1 },
     );
-    const myPatientIds = appointments.map((a) => (a.patientId as any).toString());
+    const myPatientIds = appointments.map((a) =>
+      (a.patientId as any).toString(),
+    );
 
     /* بناء فلتر البحث */
     const filter: any = {
@@ -69,7 +73,12 @@ export class PatientService {
     }
 
     const patients = await this.patientRepo.getAll(filter, {
-      firstName: 1, lastName: 1, nationalId: 1, phoneNumber: 1, isFamily: 1, _id: 1,
+      firstName: 1,
+      lastName: 1,
+      nationalId: 1,
+      phoneNumber: 1,
+      isFamily: 1,
+      _id: 1,
     });
     return patients;
   }
@@ -80,7 +89,9 @@ export class PatientService {
       patientId: id,
     });
     if (!appointmentExist) {
-      throw new ForbiddenException('You are not authorized to access this patient');
+      throw new ForbiddenException(
+        'You are not authorized to access this patient',
+      );
     }
     const patient = await this.patientRepo.getOne(
       { _id: id },
