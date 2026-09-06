@@ -12,7 +12,10 @@ export class GeneralNotificationService {
   }
 async getForCurrentUser(user: any) {
   const notifications = await this.generalNotificationRepo.getAll({
-    audience: { $in: [AudienceType.all, user.role] },
+    $or: [
+      { audience: { $in: [AudienceType.all, user.role] } },
+      { createdBy: user._id },
+    ],
   });
   return notifications || [];
 }

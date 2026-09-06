@@ -43,7 +43,9 @@ export class PatientService {
     const uniquePatientsMap = new Map();
     for (const appt of appointments) {
       const patient = appt.patientId as any;
-      uniquePatientsMap.set(patient._id.toString(), patient);
+      if (patient && patient._id) {
+        uniquePatientsMap.set(patient._id.toString(), patient);
+      }
     }
     return Array.from(uniquePatientsMap.values());
   }
