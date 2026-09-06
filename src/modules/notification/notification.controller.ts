@@ -72,7 +72,7 @@ export class NotificationController {
     return {
       message: 'data retrieved successfully',
       success: true,
-      data: { notification },
+      data: { notification, notifications: notification },
     };
   }
   @Get()

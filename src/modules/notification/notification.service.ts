@@ -15,15 +15,6 @@ export class NotificationService {
     private readonly notificationRepo: NotificationRepository,
   ) {}
   async create(notification: Notification, user: any) {
-    const appointmentExist = await this.appointmentRepo.getOne({
-      doctorId: user._id,
-      patientId: notification.patientId,
-    });
-    if (!appointmentExist) {
-      throw new ForbiddenException(
-        'You are not authorized to access this patient',
-      );
-    }
     return await this.notificationRepo.create(notification);
   }
   async update(notification: Notification, id: string) {
@@ -80,9 +71,13 @@ export class NotificationService {
     return notification;
   }
   async getAllPatientNotification(user: any) {
+    const pId = user._id;
     const notifications = await this.notificationRepo.getAll(
       {
-        patientId: user._id,
+        $or: [
+          { patientId: pId },
+          { patientId: pId ? pId.toString() : '' },
+        ],
       },
       {},
       { populate: { path: 'doctorId', select: 'firstName lastName' } },

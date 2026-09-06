@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { CreateNotificationDto } from '../dto/create-notification.dto';
 import { Notification } from '../entities/notification.entity';
 import { NotificationRepository } from '@models/index';
@@ -10,7 +11,9 @@ export class NotificationFactoryService {
   create(dto: CreateNotificationDto, user: any) {
     const notification = new Notification();
     notification.doctorId = user._id;
-    notification.patientId = dto.patientId;
+    notification.patientId = Types.ObjectId.isValid(dto.patientId as any)
+      ? new Types.ObjectId(dto.patientId as any)
+      : dto.patientId;
     notification.message = dto.message;
     notification.title = dto.title;
     notification.isRead = false;
