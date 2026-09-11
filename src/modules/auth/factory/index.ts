@@ -27,8 +27,21 @@ export class AuthFactoryService {
     patient.nationalId = createPatientDto.nationalId;
     patient.password = await bcrypt.hash(createPatientDto.password, 10);
     patient.email = createPatientDto.email;
-    patient.firstName = createPatientDto.firstName;
-    patient.lastName = createPatientDto.lastName;
+
+    if (createPatientDto.fullName) {
+      const words = createPatientDto.fullName.trim().split(/\s+/).filter(Boolean);
+      if (words.length < 4) {
+        throw new BadRequestException('يجب إدخال الاسم رباعياً على الأقل (4 كلمات)');
+      }
+      patient.firstName = words[0];
+      patient.lastName = words.slice(1).join(' ');
+    } else if (createPatientDto.firstName && createPatientDto.lastName) {
+      patient.firstName = createPatientDto.firstName;
+      patient.lastName = createPatientDto.lastName;
+    } else {
+      throw new BadRequestException('يجب إدخال الاسم رباعياً على الأقل (4 كلمات)');
+    }
+
     patient.phoneNumber = createPatientDto.phoneNumber;
     patient.otp = '';
     patient.otpExpired = new Date();

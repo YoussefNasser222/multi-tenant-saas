@@ -1,7 +1,8 @@
-import { IsEgyptianNationalId, IsEgyptianPhone } from '@common/validator';
+import { IsEgyptianNationalId, IsEgyptianPhone, IsAtLeastFourWords } from '@common/validator';
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Length,
   Matches,
@@ -37,20 +38,30 @@ export class CreatePatientDto {
   @IsNotEmpty()
   @IsEgyptianNationalId()
   nationalId: string;
+
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  firstName: string;
+  @IsAtLeastFourWords({ message: 'الاسم يجب أن يتكون من 4 كلمات على الأقل' })
+  fullName?: string;
+
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  lastName: string;
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
   password: string;
+
   @IsString()
   @IsNotEmpty()
   @IsEgyptianPhone()
   phoneNumber: string;
+
   @IsEmail()
   email: string;
 }

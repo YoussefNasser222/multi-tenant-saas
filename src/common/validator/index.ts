@@ -58,3 +58,30 @@ export function IsEgyptianPhone() {
     message: 'phoneNumber must be a valid Egyptian mobile number',
   });
 }
+
+export function IsAtLeastFourWords(
+  validationOptions?: ValidationOptions,
+) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'isAtLeastFourWords',
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+
+      validator: {
+        validate(value: any) {
+          if (typeof value !== 'string') {
+            return false;
+          }
+          const words = value.trim().split(/\s+/).filter(Boolean);
+          return words.length >= 4;
+        },
+
+        defaultMessage(args: ValidationArguments) {
+          return `${args.property} must consist of at least 4 words`;
+        },
+      },
+    });
+  };
+}
