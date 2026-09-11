@@ -3,7 +3,6 @@ import * as bcrypt from 'bcrypt';
 import { CreateDoctorDto, CreatePatientDto } from '../dto/create-auth.dto';
 import { Doctor, Hospital, Patient } from '../entities/auth.entity';
 import { CreateHospitalDto } from '../dto/create-hospital.dto';
-import { CreateFamilyPatientDto } from '../dto/create-family.dto';
 
 @Injectable()
 export class AuthFactoryService {
@@ -39,21 +38,6 @@ export class AuthFactoryService {
     return patient;
   }
 
-  /* تسجيل أسرة — رقم قومي واحد + أفراد */
-  async createFamilyPatient(dto: CreateFamilyPatientDto) {
-    const patient = new Patient();
-    patient.nationalId = dto.nationalId;
-    patient.password = await bcrypt.hash(dto.password, 10);
-    patient.email = dto.email;
-    patient.firstName = dto.familyMembers[0].name.split(' ')[0] ?? 'رب';
-    patient.lastName = dto.familyMembers[0].name.split(' ').slice(1).join(' ') || 'الأسرة';
-    patient.phoneNumber = dto.familyMembers[0].phoneNumber;
-    patient.otp = '';
-    patient.otpExpired = new Date();
-    patient.isFamily = true;
-    patient.familyMembers = dto.familyMembers;
-    return patient;
-  }
 
   async createHospital(dto: CreateHospitalDto) {
     const hospital = new Hospital();

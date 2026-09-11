@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 import { CreateDoctorDto, CreatePatientDto, LoginDto, ResetPasswordDto } from './dto/create-auth.dto';
 import { AuthFactoryService } from './factory';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
-import { CreateFamilyPatientDto } from './dto/create-family.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -51,19 +50,6 @@ export class AuthController {
     }
   }
 
-  /* تسجيل أسرة */
-  @Post('register/family')
-  @Public()
-  @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async createFamilyPatient(@Body() dto: CreateFamilyPatientDto) {
-    const patient = await this.authFactoryService.createFamilyPatient(dto);
-    const createdPatient = await this.authService.createPatient(patient);
-    return {
-      message: "family account created successfully",
-      success: true,
-      data: { createdPatient }
-    }
-  }
 
   @Post('login')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
