@@ -24,10 +24,6 @@ export class Appointment {
   clinicId: Types.ObjectId;
   @Prop({ type: Date, required: true })
   date: Date;
-  @Prop({ type: Date })
-  startTime ?: Date;
-  @Prop({ type: Date })
-  endTime ?: Date;
   @Prop({
     type: String,
     enum: AppointmentStatus,

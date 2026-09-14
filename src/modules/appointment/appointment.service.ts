@@ -24,17 +24,6 @@ export class AppointmentService {
   ) {}
 
   async createAppointment(appointment: Appointment) {
-    if (appointment.startTime && appointment.endTime) {
-      const appointmentExist = await this.appointmentRepo.getOne({
-        doctorId: appointment.doctorId,
-        startTime: { $lt: appointment.endTime },
-        endTime: { $gt: appointment.startTime },
-        status: { $ne: AppointmentStatus.CANCELLED },
-      });
-      if (appointmentExist) {
-        throw new ConflictException('Appointment already exists');
-      }
-    }
     return await this.appointmentRepo.create(appointment);
   }
 

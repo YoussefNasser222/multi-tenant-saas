@@ -7,8 +7,6 @@ export class Appointment {
   doctorId: Types.ObjectId;
   clinicId: Types.ObjectId;
   date: Date;
-  startTime?: Date;
-  endTime?: Date;
   status: AppointmentStatus;
   notes?: string;
   queueNumber?: number;

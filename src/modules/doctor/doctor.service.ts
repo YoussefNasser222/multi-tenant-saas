@@ -150,4 +150,41 @@ export class DoctorService {
     }
     return updatedDoctor;
   }
+
+  async blockDate(doctorId: string, dateStr: string) {
+    const clinic = await this.clinicRepo.getOne({ doctorId });
+    if (!clinic) {
+      throw new NotFoundException('clinic not found');
+    }
+    const targetDate = new Date(dateStr);
+    const targetTime = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+    const existing = (clinic.blockedDates || []).some(
+      (d: Date) => new Date(new Date(d).getFullYear(), new Date(d).getMonth(), new Date(d).getDate()).getTime() === targetTime
+    );
+    if (existing) {
+      return clinic;
+    }
+    return await this.clinicRepo.update(
+      { doctorId },
+      { $push: { blockedDates: targetDate } },
+      { returnDocument: 'after' },
+    );
+  }
+
+  async unblockDate(doctorId: string, dateStr: string) {
+    const clinic = await this.clinicRepo.getOne({ doctorId });
+    if (!clinic) {
+      throw new NotFoundException('clinic not found');
+    }
+    const targetDate = new Date(dateStr);
+    const targetTime = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+    const filtered = (clinic.blockedDates || []).filter(
+      (d: Date) => new Date(new Date(d).getFullYear(), new Date(d).getMonth(), new Date(d).getDate()).getTime() !== targetTime
+    );
+    return await this.clinicRepo.update(
+      { doctorId },
+      { blockedDates: filtered },
+      { returnDocument: 'after' },
+    );
+  }
 }

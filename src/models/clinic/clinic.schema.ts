@@ -49,12 +49,12 @@ export class Clinic {
     type: String,
     enum: BookingType,
     required: true,
-    default: BookingType.TIME,
+    default: BookingType.QUEUE,
   })
   bookingType: BookingType;
 
-  @Prop({ type: Number })
-  slotDuration?: number;
+  @Prop({ type: [Date], default: [] })
+  blockedDates: Date[];
 
   @Prop({ type: Number, required: true, default: 20 })
   maxPatientsPerDay: number;

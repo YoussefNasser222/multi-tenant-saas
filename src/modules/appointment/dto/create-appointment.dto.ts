@@ -28,12 +28,6 @@ export class CreateAppointmentPatientDto {
   notes?: string;
 
   @IsOptional()
-  @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-    message: 'startTime must be in HH:mm format (e.g. 14:30)',
-  })
-  startTime?: string;
-  @IsOptional()
   @IsEnum(VisitType)
   visitingType?: VisitType;
   @IsOptional()
@@ -50,12 +44,6 @@ export class CreateAppointmentDoctorDto {
   @IsString()
   @IsOptional()
   notes?: string;
-  @IsOptional()
-  @IsString()
-  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-    message: 'startTime must be in HH:mm format (e.g. 14:30)',
-  })
-  startTime?: string;
   @IsOptional()
   @IsEnum(VisitType)
   visitingType?: VisitType;

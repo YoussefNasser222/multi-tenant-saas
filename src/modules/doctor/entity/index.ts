@@ -17,8 +17,7 @@
     address: string;
     isActive: boolean;
     bookingType: BookingType;
-    slotDuration?: number;
+    blockedDates?: Date[];
     maxPatientsPerDay: number;
     followUpPrice: number;
-    
   }

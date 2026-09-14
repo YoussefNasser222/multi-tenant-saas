@@ -7,17 +7,18 @@ import { SkipThrottle } from '@nestjs/throttler';
 @Controller('clinic')
 export class ClinicController {
   constructor(private readonly clinicService: ClinicService) {}
-  @Get(':id/slots')
+  @Get(':id/queue-status')
   @Public()
   @SkipThrottle()
-  async getSlots(@Param('id') id: string, @Query('date') date: string) {
-    const result = await this.clinicService.getAvailableSlots(id, date);
+  async getQueueStatus(@Param('id') id: string, @Query('date') date: string) {
+    const result = await this.clinicService.getQueueStatus(id, date);
     return {
       message: 'data retrieved successfully',
       success: true,
       data: result,
     };
   }
+
   @Get(':id')
   @Public()
   @SkipThrottle()

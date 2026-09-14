@@ -47,6 +47,45 @@ export class DoctorController {
       success: true,
     };
   }
+  @Put('clinic/block-date')
+  @Paid(['Doctor'])
+  async blockDate(
+    @Body('date') date: string,
+    @User() user: any,
+  ) {
+    const updatedClinic = await this.doctorService.blockDate(user._id, date);
+    return {
+      message: 'date blocked successfully',
+      success: true,
+      data: updatedClinic,
+    };
+  }
+  @Put('clinic/unblock-date')
+  @Paid(['Doctor'])
+  async unblockDate(
+    @Body('date') date: string,
+    @User() user: any,
+  ) {
+    const updatedClinic = await this.doctorService.unblockDate(user._id, date);
+    return {
+      message: 'date unblocked successfully',
+      success: true,
+      data: updatedClinic,
+    };
+  }
+  @Delete('clinic/block-date')
+  @Paid(['Doctor'])
+  async deleteBlockDate(
+    @Body('date') date: string,
+    @User() user: any,
+  ) {
+    const updatedClinic = await this.doctorService.unblockDate(user._id, date);
+    return {
+      message: 'date unblocked successfully',
+      success: true,
+      data: updatedClinic,
+    };
+  }
   @Put()
   @Paid(['Doctor'])
   async update(@Body() updateDoctorDto: UpdatedDoctorDto, @User() user: any) {

@@ -1,4 +1,5 @@
 import {
+  BookingType,
   ClinicRepository,
   DoctorRepository,
   PatientRepository,
@@ -57,8 +58,10 @@ export class DoctorFactoryService {
     clinic.doctorId = doctor._id;
     clinic.workingDays = createClinicDto.workingDays || [];
     clinic.address = createClinicDto.address || '';
-    clinic.bookingType = createClinicDto.bookingType || ('queue' as any);
-    clinic.slotDuration = createClinicDto.slotDuration || 30;
+    clinic.bookingType = BookingType.QUEUE;
+    clinic.blockedDates = createClinicDto.blockedDates
+      ? createClinicDto.blockedDates.map((d) => new Date(d))
+      : [];
     clinic.maxPatientsPerDay = createClinicDto.maxPatientsPerDay || 20;
     clinic.followUpPrice =
       createClinicDto.followUpPrice != null
@@ -86,9 +89,10 @@ export class DoctorFactoryService {
     clinic.doctorId = oldClinic.doctorId;
     clinic.workingDays = updateClinicDto.workingDays || oldClinic.workingDays;
     clinic.address = updateClinicDto.address || oldClinic.address;
-    clinic.bookingType = updateClinicDto.bookingType ?? oldClinic.bookingType;
-    clinic.slotDuration =
-      updateClinicDto.slotDuration ?? oldClinic.slotDuration;
+    clinic.bookingType = BookingType.QUEUE;
+    clinic.blockedDates = updateClinicDto.blockedDates
+      ? updateClinicDto.blockedDates.map((d) => new Date(d))
+      : oldClinic.blockedDates || [];
     clinic.maxPatientsPerDay =
       updateClinicDto.maxPatientsPerDay ?? oldClinic.maxPatientsPerDay;
     clinic.followUpPrice =

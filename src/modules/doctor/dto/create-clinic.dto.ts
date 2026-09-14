@@ -70,11 +70,9 @@ export class CreateClinicDto {
   @IsEnum(BookingType)
   bookingType?: BookingType;
 
-  @ValidateIf((o) => o.bookingType === BookingType.TIME)
   @IsOptional()
-  @IsInt()
-  @Min(5)
-  slotDuration?: number;
+  @IsArray()
+  blockedDates?: string[];
 
   @IsOptional()
   @IsInt()

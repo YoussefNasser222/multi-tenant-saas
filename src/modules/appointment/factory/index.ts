@@ -42,6 +42,35 @@ export class AppointmentFactoryService {
         'this clinic is not accepting bookings right now',
       );
 
+    const reqDate = new Date(dto.date);
+    const reqTime = new Date(
+      reqDate.getFullYear(),
+      reqDate.getMonth(),
+      reqDate.getDate(),
+    ).getTime();
+
+    const isBlocked = (clinic.blockedDates || []).some(
+      (d: Date) =>
+        new Date(
+          new Date(d).getFullYear(),
+          new Date(d).getMonth(),
+          new Date(d).getDate(),
+        ).getTime() === reqTime,
+    );
+    if (isBlocked) {
+      throw new ForbiddenException('هذا اليوم مغلق للحجز');
+    }
+
+    if (clinic.workingDays && clinic.workingDays.length > 0) {
+      const dayName = reqDate.toLocaleDateString('en-US', { weekday: 'long' });
+      const isOpenDay = clinic.workingDays.some(
+        (w) => w.day.toLowerCase() === dayName.toLowerCase(),
+      );
+      if (!isOpenDay) {
+        throw new ForbiddenException('العيادة لا تعمل في هذا اليوم');
+      }
+    }
+
     const appointment = new Appointment();
     appointment.clinicId = clinic._id;
     appointment.doctorId = dto.doctorId;
@@ -75,44 +104,13 @@ export class AppointmentFactoryService {
       status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
     });
 
-    const isFull = activeCount >= clinic.maxPatientsPerDay;
-
-    if (clinic.bookingType === BookingType.QUEUE) {
-      appointment.queueNumber = activeCount + 1;
-      appointment.status = isFull
-        ? AppointmentStatus.WAITLISTED
-        : AppointmentStatus.CONFIRMED;
-    } else {
-      if (!dto.startTime) {
-        throw new BadRequestException('startTime is required for this clinic');
-      }
-      if (!clinic.slotDuration || clinic.slotDuration <= 0) {
-        throw new BadRequestException('clinic slot duration is not configured');
-      }
-
-      const dateStr = dto.date.toISOString().split('T')[0];
-      const startTime = new Date(`${dateStr}T${dto.startTime}:00`);
-      const endTime = new Date(
-        startTime.getTime() + clinic.slotDuration! * 60000,
-      );
-
-      const slotTaken = await this.appointmentRepo.getOne({
-        doctorId: dto.doctorId,
-        status: {
-          $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING],
-        },
-        startTime: { $lt: endTime },
-        endTime: { $gt: startTime },
-      });
-
-      appointment.startTime = startTime;
-      appointment.endTime = endTime;
-      appointment.status =
-        isFull || slotTaken
-          ? AppointmentStatus.WAITLISTED
-          : AppointmentStatus.CONFIRMED;
-      appointment.queueNumber = activeCount + 1;
+    const maxLimit = clinic.maxPatientsPerDay || 20;
+    if (activeCount >= maxLimit) {
+      throw new ForbiddenException('هذا اليوم مكتمل، لا توجد أماكن متاحة');
     }
+
+    appointment.queueNumber = activeCount + 1;
+    appointment.status = AppointmentStatus.CONFIRMED;
 
     return appointment;
   }
@@ -139,6 +137,51 @@ export class AppointmentFactoryService {
       );
     }
 
+    const reqDate = new Date(dto.date);
+    const reqTime = new Date(
+      reqDate.getFullYear(),
+      reqDate.getMonth(),
+      reqDate.getDate(),
+    ).getTime();
+
+    const isBlocked = (clinic.blockedDates || []).some(
+      (d: Date) =>
+        new Date(
+          new Date(d).getFullYear(),
+          new Date(d).getMonth(),
+          new Date(d).getDate(),
+        ).getTime() === reqTime,
+    );
+    if (isBlocked) {
+      throw new ForbiddenException('هذا اليوم مغلق للحجز');
+    }
+
+    if (clinic.workingDays && clinic.workingDays.length > 0) {
+      const dayName = reqDate.toLocaleDateString('en-US', { weekday: 'long' });
+      const isOpenDay = clinic.workingDays.some(
+        (w) => w.day.toLowerCase() === dayName.toLowerCase(),
+      );
+      if (!isOpenDay) {
+        throw new ForbiddenException('العيادة لا تعمل في هذا اليوم');
+      }
+    }
+
+    const dayStart = new Date(dto.date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dto.date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const activeCount = await this.appointmentRepo.count({
+      doctorId: user._id,
+      date: { $gte: dayStart, $lte: dayEnd },
+      status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
+    });
+
+    const maxLimit = clinic.maxPatientsPerDay || 20;
+    if (activeCount >= maxLimit) {
+      throw new ForbiddenException('هذا اليوم مكتمل، لا توجد أماكن متاحة');
+    }
+
     const appointment = new Appointment();
     appointment.clinicId = clinic._id;
     appointment.doctorId = user._id;
@@ -160,53 +203,8 @@ export class AppointmentFactoryService {
       doctorVisitingType = prevAppt ? VisitType.FOLLOW_UP : VisitType.NEW;
     }
     appointment.visitingType = doctorVisitingType;
-
-    const dayStart = new Date(dto.date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dto.date);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const activeCount = await this.appointmentRepo.count({
-      doctorId: user._id,
-      date: { $gte: dayStart, $lte: dayEnd },
-      status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
-    });
-
-    const isFull = activeCount >= clinic.maxPatientsPerDay;
-
-    if (clinic.bookingType === BookingType.QUEUE) {
-      appointment.queueNumber = activeCount + 1;
-      appointment.status = isFull
-        ? AppointmentStatus.WAITLISTED
-        : AppointmentStatus.CONFIRMED;
-    } else {
-      // TIME
-      if (!dto.startTime) {
-        throw new BadRequestException('startTime is required for this clinic');
-      }
-      const dateStr = dto.date.toISOString().split('T')[0];
-      const startTime = new Date(`${dateStr}T${dto.startTime}:00`);
-      const endTime = new Date(
-        startTime.getTime() + clinic.slotDuration! * 60000,
-      );
-
-      const slotTaken = await this.appointmentRepo.getOne({
-        doctorId: user._id,
-        status: {
-          $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING],
-        },
-        startTime: { $lt: endTime },
-        endTime: { $gt: startTime },
-      });
-
-      appointment.startTime = startTime;
-      appointment.endTime = endTime;
-      appointment.status =
-        isFull || slotTaken
-          ? AppointmentStatus.WAITLISTED
-          : AppointmentStatus.CONFIRMED;
-      appointment.queueNumber = activeCount + 1;
-    }
+    appointment.queueNumber = activeCount + 1;
+    appointment.status = AppointmentStatus.CONFIRMED;
 
     return appointment;
   }
