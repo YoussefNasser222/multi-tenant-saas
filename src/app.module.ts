@@ -43,10 +43,14 @@ import { PatientModule } from './modules/patient/patient.module';
     UploadModule,
     MedicalRecordModule,
     NotificationModule,
+    // الحد ده بقى على مستوى الابلكيشن كله (كل الراوتس مجتمعة لكل IP).
+    // كان 10 requests/دقيقة بس، وده قليل جدًا لأي صفحة فيها أكتر من كام API call مع بعض (dashboard، notifications...).
+    // خليناه أعلى بكتير عشان الاستخدام العادي للموقع، وسيبنا حماية الـ Brute-force
+    // زي ما هي على راوتس اللوجن/الـ OTP لأنها معمولة بـ @Throttle خاص بيها في auth.controller.ts.
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 10,
+        limit: 300,
       },
     ]),
     ClinicModule,

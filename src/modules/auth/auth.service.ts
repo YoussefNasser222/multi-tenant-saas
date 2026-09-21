@@ -11,12 +11,15 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginDto, ResetPasswordDto } from './dto/create-auth.dto';
 import { Doctor, Hospital, Patient } from './entities/auth.entity';
+
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 أيام - نفس مدة صلاحية الـ refreshToken
 
 @Injectable()
 export class AuthService {
@@ -81,17 +84,23 @@ export class AuthService {
         expiresIn: '7d',
       } as JwtSignOptions,
     );
-    await this.tokenRepo.deleteMany({ userId: user._id });
+    // من غير deleteMany: كل login بيعمل جلسة (سيشن) جديدة مستقلة،
+    // فمتقفلش جلسات المستخدم على أجهزة/تابات تانية.
+    // التنضيف التلقائي للجلسات القديمة/المنتهية بقى شغل الـ TTL index في token.schema.ts.
     await this.tokenRepo.create({
       userId: user._id,
       refreshToken,
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
     });
     return { accessToken, refreshToken };
   }
   async refreshToken(refreshToken: string) {
+    if (!refreshToken) {
+      throw new BadRequestException('refresh token is required');
+    }
     const token = await this.tokenRepo.getOne({ refreshToken });
     if (!token) {
-      throw new NotFoundException('token not found');
+      throw new UnauthorizedException('session expired, please login again');
     }
     const user = await this.userRepo.getOne({ _id: token.userId });
     if (!user) {
@@ -117,10 +126,18 @@ export class AuthService {
         expiresIn: '7d',
       } as JwtSignOptions,
     );
-    await this.tokenRepo.update(
-      { userId: user._id },
-      { refreshToken: newRefreshToken },
+
+    const updated = await this.tokenRepo.update(
+      { refreshToken },
+      {
+        refreshToken: newRefreshToken,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+      },
     );
+    if (!updated) {
+      throw new UnauthorizedException('session expired, please login again');
+    }
+
     return { accessToken, refreshToken: newRefreshToken };
   }
   async sendOtp(email: string) {
