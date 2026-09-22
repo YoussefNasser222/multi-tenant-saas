@@ -15,6 +15,7 @@ import {
 import { DoctorService } from './doctor.service';
 import { CreateClinicDto } from './dto/create-clinic.dto';
 import { UpdatedClinicDto } from './dto/update-clinic.dto';
+import { ClinicDateDto, UpdateClinicStatusDto } from './dto/clinic-status.dto';
 import { DoctorFactoryService } from './factory';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { log } from 'console';
@@ -38,10 +39,10 @@ export class DoctorController {
   @Put('clinic/status')
   @Paid(['Doctor'])
   async updateStatus(
-    @Body('isActive') isActive: boolean,
+    @Body() dto: UpdateClinicStatusDto,
     @User() user: any,
   ) {
-    await this.doctorService.updateStatus(isActive, user._id);
+    await this.doctorService.updateStatus(dto.isActive, user._id);
     return {
       message: 'clinic status updated successfully',
       success: true,
@@ -50,10 +51,10 @@ export class DoctorController {
   @Put('clinic/block-date')
   @Paid(['Doctor'])
   async blockDate(
-    @Body('date') date: string,
+    @Body() dto: ClinicDateDto,
     @User() user: any,
   ) {
-    const updatedClinic = await this.doctorService.blockDate(user._id, date);
+    const updatedClinic = await this.doctorService.blockDate(user._id, dto.date);
     return {
       message: 'date blocked successfully',
       success: true,
@@ -63,10 +64,10 @@ export class DoctorController {
   @Put('clinic/unblock-date')
   @Paid(['Doctor'])
   async unblockDate(
-    @Body('date') date: string,
+    @Body() dto: ClinicDateDto,
     @User() user: any,
   ) {
-    const updatedClinic = await this.doctorService.unblockDate(user._id, date);
+    const updatedClinic = await this.doctorService.unblockDate(user._id, dto.date);
     return {
       message: 'date unblocked successfully',
       success: true,
@@ -76,10 +77,10 @@ export class DoctorController {
   @Delete('clinic/block-date')
   @Paid(['Doctor'])
   async deleteBlockDate(
-    @Body('date') date: string,
+    @Body() dto: ClinicDateDto,
     @User() user: any,
   ) {
-    const updatedClinic = await this.doctorService.unblockDate(user._id, date);
+    const updatedClinic = await this.doctorService.unblockDate(user._id, dto.date);
     return {
       message: 'date unblocked successfully',
       success: true,

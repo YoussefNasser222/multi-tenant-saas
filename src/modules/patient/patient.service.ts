@@ -7,6 +7,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+// عشان نمنع Regex Injection / ReDoS لما نستخدم قيمة المستخدم جوه $regex
+const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 @Injectable()
 export class PatientService {
   constructor(
@@ -67,10 +70,11 @@ export class PatientService {
       _id: { $nin: myPatientIds },
     };
     if (search?.trim()) {
+      const safeSearch = escapeRegex(search.trim());
       filter.$or = [
-        { firstName: { $regex: search.trim(), $options: 'i' } },
-        { lastName: { $regex: search.trim(), $options: 'i' } },
-        { nationalId: { $regex: search.trim(), $options: 'i' } },
+        { firstName: { $regex: safeSearch, $options: 'i' } },
+        { lastName: { $regex: safeSearch, $options: 'i' } },
+        { nationalId: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 

@@ -1,8 +1,16 @@
-import { Public, User } from '@common/decorators';
+import { Auth, Public, User } from '@common/decorators';
 import { Body, Controller, Post } from '@nestjs/common';
+import { Role } from '@models/index';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { CreateDoctorDto, CreatePatientDto, LoginDto, ResetPasswordDto } from './dto/create-auth.dto';
+import {
+  CreateDoctorDto,
+  CreatePatientDto,
+  LoginDto,
+  RefreshTokenDto,
+  ResetPasswordDto,
+  SendOtpDto,
+} from './dto/create-auth.dto';
 import { AuthFactoryService } from './factory';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 
@@ -63,8 +71,8 @@ export class AuthController {
   }
 
   @Post('refresh-token')
-  async refreshToken(@Body("refreshToken") refreshToken: string) {
-    const result = await this.authService.refreshToken(refreshToken);
+  async refreshToken(@Body() dto: RefreshTokenDto) {
+    const result = await this.authService.refreshToken(dto.refreshToken);
     return {
       message: "token refreshed successfully",
       success: true,
@@ -72,10 +80,21 @@ export class AuthController {
     }
   }
 
+  // جديد: تسجيل خروج فعلي بيلغي جلسات اليوزر (refresh tokens) بدل ما يفضل التوكن صالح لحد ما ينتهي لوحده
+  @Post('logout')
+  @Auth([Role.Admin, Role.Doctor, Role.Patient, Role.Hospital])
+  async logout(@User() user: any) {
+    await this.authService.logout(user._id);
+    return {
+      message: "logged out successfully",
+      success: true,
+    }
+  }
+
   @Post('send-otp')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async sendOtp(@Body('email') email: string) {
-    await this.authService.sendOtp(email);
+  async sendOtp(@Body() dto: SendOtpDto) {
+    await this.authService.sendOtp(dto.email);
     return {
       message: "otp sent successfully",
       success: true,

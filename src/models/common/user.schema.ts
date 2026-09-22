@@ -20,6 +20,12 @@ export class User {
   otp: string;
   @Prop({ type: Date })
   otpExpired: Date;
+  // عداد محاولات الـ OTP الغلط + وقت القفل المؤقت بعد تجاوز الحد المسموح
+  // حقول اختيارية (مش required) فمش هيأثر على أي document قديم موجود بالفعل
+  @Prop({ type: Number, default: 0 })
+  otpAttempts: number;
+  @Prop({ type: Date })
+  otpLockedUntil: Date;
   @Prop({ type: String, required: true, unique: true, index: true })
   nationalId: string;
 }

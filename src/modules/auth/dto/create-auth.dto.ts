@@ -92,3 +92,17 @@ export class ResetPasswordDto {
   @IsNotEmpty()
   email: string;
 }
+
+// عشان نقفل ثغرة NoSQL Injection في /auth/refresh-token
+export class RefreshTokenDto {
+  @IsString()
+  @IsNotEmpty()
+  refreshToken: string;
+}
+
+// عشان نقفل ثغرة NoSQL Injection في /auth/send-otp
+export class SendOtpDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
