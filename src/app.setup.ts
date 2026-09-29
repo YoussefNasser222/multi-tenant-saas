@@ -4,6 +4,13 @@ import type { NextFunction, Request, Response } from 'express';
 
 const DEFAULT_ORIGINS = ['https://medical-clinic-saas.vercel.app'];
 
+// روابط الـ Preview اللي Vercel بيولّدها تلقائيًا لكل فرع/كومِت شكلها مش ثابت
+// (مثلًا multi-tenant-saas-git-main-3bdduo-bits-projects.vercel.app أو
+// multi-tenant-saas-csbix6iud-3bdduo-bits-projects.vercel.app) فمينفعش نحطهم
+// كـ exact match. بنقبل أي رابط تحت نفس الـ Vercel team/project بتاعنا تلقائيًا.
+const PREVIEW_ORIGIN_PATTERN =
+  /^https:\/\/multi-tenant-saas-[a-z0-9-]+-3bdduo-bits-projects\.vercel\.app$/;
+
 function allowedOrigins(): string[] {
   const fromEnv = (process.env.CORS_ORIGINS || '')
     .split(',')
@@ -14,6 +21,10 @@ function allowedOrigins(): string[] {
       ? []
       : ['http://localhost:3000', 'http://127.0.0.1:3000'];
   return Array.from(new Set([...DEFAULT_ORIGINS, ...fromEnv, ...dev]));
+}
+
+function isOriginAllowed(origin: string, allowlist: string[]): boolean {
+  return allowlist.includes(origin) || PREVIEW_ORIGIN_PATTERN.test(origin);
 }
 
 /** Minimal security headers (no extra dependency needed). */
@@ -47,8 +58,16 @@ export function configureApp(app: INestApplication) {
 
   app.use(securityHeaders);
 
+  const allowlist = allowedOrigins();
   app.enableCors({
-    origin: allowedOrigins(),
+    origin: (origin, callback) => {
+      // requests بدون Origin header (server-to-server، curl، Postman) بنسمحلها
+      if (!origin || isOriginAllowed(origin, allowlist)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 600,
