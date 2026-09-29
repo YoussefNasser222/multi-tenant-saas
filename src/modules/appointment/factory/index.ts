@@ -28,6 +28,47 @@ export class AppointmentFactoryService {
     private readonly appointmentRepo: AppointmentRepository,
     private readonly clinicRepo: ClinicRepository,
   ) {}
+
+  /**
+   * بيحجز رقم دور لليوم ده بعملية atomic واحدة ($inc على counter جوه document العيادة)،
+   * فمينفعش طلبين متزامنين ياخدوا نفس الرقم أو يعدّوا maxPatientsPerDay.
+   * بترجع null لو اليوم مكتمل.
+   */
+  private async reserveQueueNumber(
+    clinicId: Types.ObjectId,
+    reqDate: Date,
+    maxLimit: number,
+  ): Promise<number | null> {
+    const dateKey = reqDate.toISOString().slice(0, 10);
+
+    // 1) في الغالب: الـ counter موجود بالفعل ولسه تحت الحد الأقصى → زوّده atomically
+    const inc = await this.clinicRepo.update(
+      {
+        _id: clinicId,
+        dailyCounters: { $elemMatch: { date: dateKey, count: { $lt: maxLimit } } },
+      } as any,
+      { $inc: { 'dailyCounters.$.count': 1 } } as any,
+      { returnDocument: 'after' },
+    );
+    if (inc) {
+      const counter = inc.dailyCounters.find((d) => d.date === dateKey);
+      return counter?.count ?? 1;
+    }
+
+    // 2) أول حجز في اليوم ده لسه مفيهوش counter → أنشئه atomically (بس لو لسه مش موجود،
+    // عشان لو طلب تاني سبقنا خطوة 1 هتلاقيه موجود وترجع من هنا من غير ما تعمل push مكرر)
+    const created = await this.clinicRepo.update(
+      { _id: clinicId, 'dailyCounters.date': { $ne: dateKey } } as any,
+      { $push: { dailyCounters: { date: dateKey, count: 1 } } } as any,
+      { returnDocument: 'after' },
+    );
+    if (created) {
+      return 1;
+    }
+
+    // 3) الـ counter موجود لكنه وصل للحد الأقصى بالفعل
+    return null;
+  }
   async createAppointmentByPatient(
     dto: CreateAppointmentPatientDto,
     user: any,
@@ -93,23 +134,13 @@ export class AppointmentFactoryService {
     }
     appointment.visitingType = patientVisitingType;
 
-    const dayStart = new Date(dto.date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dto.date);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const activeCount = await this.appointmentRepo.count({
-      doctorId: dto.doctorId,
-      date: { $gte: dayStart, $lte: dayEnd },
-      status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
-    });
-
     const maxLimit = clinic.maxPatientsPerDay || 20;
-    if (activeCount >= maxLimit) {
+    const queueNumber = await this.reserveQueueNumber(clinic._id, reqDate, maxLimit);
+    if (queueNumber === null) {
       throw new ForbiddenException('هذا اليوم مكتمل، لا توجد أماكن متاحة');
     }
 
-    appointment.queueNumber = activeCount + 1;
+    appointment.queueNumber = queueNumber;
     appointment.status = AppointmentStatus.CONFIRMED;
 
     return appointment;
@@ -166,19 +197,9 @@ export class AppointmentFactoryService {
       }
     }
 
-    const dayStart = new Date(dto.date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dto.date);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const activeCount = await this.appointmentRepo.count({
-      doctorId: user._id,
-      date: { $gte: dayStart, $lte: dayEnd },
-      status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
-    });
-
     const maxLimit = clinic.maxPatientsPerDay || 20;
-    if (activeCount >= maxLimit) {
+    const queueNumber = await this.reserveQueueNumber(clinic._id, reqDate, maxLimit);
+    if (queueNumber === null) {
       throw new ForbiddenException('هذا اليوم مكتمل، لا توجد أماكن متاحة');
     }
 
@@ -203,7 +224,7 @@ export class AppointmentFactoryService {
       doctorVisitingType = prevAppt ? VisitType.FOLLOW_UP : VisitType.NEW;
     }
     appointment.visitingType = doctorVisitingType;
-    appointment.queueNumber = activeCount + 1;
+    appointment.queueNumber = queueNumber;
     appointment.status = AppointmentStatus.CONFIRMED;
 
     return appointment;

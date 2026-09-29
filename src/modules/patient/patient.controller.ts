@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Put, Query } from '@nestjs/common';
 import { PatientService } from './patient.service';
 import { Auth, Paid, User } from '@common/decorators';
-import { UpdatedPatientDto } from '@modules/auth/dto/update-auth.dto';
+import { UpdatedPatientDto, UpdatePatientByDoctorDto } from '@modules/auth/dto/update-auth.dto';
 import { PatientFactoryService } from './factory';
 
 @Controller('patient')
@@ -26,7 +26,7 @@ export class PatientController {
   @Paid(['Doctor'])
   async updatePatientById(
     @User() user: any,
-    @Body() updatePatientDto: UpdatedPatientDto,
+    @Body() updatePatientDto: UpdatePatientByDoctorDto,
     @Param('id') id: string,
   ) {
     const patient = await this.patientFactoryService.updatePatientById(id, updatePatientDto)

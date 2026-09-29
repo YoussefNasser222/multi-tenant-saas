@@ -9,17 +9,16 @@ import {
   Patch,
   Post,
   Put,
-  UploadedFile,
-  UseInterceptors,
-  UsePipes,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { AdminFactoryService } from './factory';
-import { IsNumber } from 'class-validator';
-import { ActiveAccountDto as ActiveAccountDto, ActiveHospitalDto } from './dto/create-admin.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { UploadService } from '@common/upload';
+import {
+  ActiveAccountDto,
+  ActiveHospitalDto,
+  CreateDoctorByAdminDto,
+} from './dto/create-admin.dto';
+import { ParseObjectIdPipe } from '@common/pipes';
 
 @Controller('admin')
 @Auth(['Admin'])
@@ -27,7 +26,6 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly adminFactoryService: AdminFactoryService,
-    private readonly uploadService: UploadService,
   ) {}
   @Get('dash-board')
   async getDashboard() {
@@ -44,7 +42,7 @@ export class AdminController {
     const updatedAdmin = await this.adminService.updateAdmin(user, admin);
     return {
       message: 'admin updated successfully',
-      success: 'true',
+      success: true,
       data: { updatedAdmin },
     };
   }
@@ -53,8 +51,17 @@ export class AdminController {
     const admin = await this.adminService.getAdmin(user);
     return {
       message: 'admin retrieved successfully',
-      success: 'true',
+      success: true,
       data: { admin },
+    };
+  }
+  @Post('doctors')
+  async createDoctor(@Body() dto: CreateDoctorByAdminDto) {
+    const doctor = await this.adminService.createDoctor(dto);
+    return {
+      message: 'doctor created successfully',
+      success: true,
+      data: { doctor },
     };
   }
   @Get('doctors')
@@ -62,16 +69,16 @@ export class AdminController {
     const doctors = await this.adminService.getDoctors();
     return {
       message: 'doctors retrieved successfully',
-      success: 'true',
+      success: true,
       data: { doctors },
     };
   }
   @Get('doctors/:id')
-  async getDoctor(@User() user: any, @Param('id') id: string) {
+  async getDoctor(@User() user: any, @Param('id', ParseObjectIdPipe) id: string) {
     const doctor = await this.adminService.getDoctor(user, id);
     return {
       message: 'doctor retrieved successfully',
-      success: 'true',
+      success: true,
       data: { doctor },
     };
   }
@@ -80,70 +87,70 @@ export class AdminController {
     const clinics = await this.adminService.getClinics();
     return {
       message: 'clinics retrieved successfully',
-      success: 'true',
+      success: true,
       data: { clinics },
     };
   }
   @Get('clinics/:id')
-  async getClinic(@User() user: any, @Param('id') id: string) {
+  async getClinic(@User() user: any, @Param('id', ParseObjectIdPipe) id: string) {
     const clinic = await this.adminService.getClinic(user, id);
     return {
       message: 'clinic retrieved successfully',
-      success: 'true',
+      success: true,
       data: { clinic },
     };
   }
   @Patch('doctors/:id/active')
   async activeDoctor(
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @Body() activeAccountDto: ActiveAccountDto,
   ) {
     const doctor = await this.adminService.activeDoctor(id, activeAccountDto);
     return {
       message: 'doctor activated successfully',
-      success: 'true',
+      success: true,
       data: { doctor },
     };
   }
   @Patch('hospital/:id/active')
-  async activeHospital(@Param('id') id: string, @Body() dto: ActiveHospitalDto) {
+  async activeHospital(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: ActiveHospitalDto) {
     const hospital = await this.adminService.activeHospital(id, dto);
     return {
       message: 'hospital activated successfully',
-      success: 'true',
+      success: true,
       data: { hospital },
     };
   }
   @Delete('doctors/:id')
-  async deleteDoctor(@Param('id') id: string) {
+  async deleteDoctor(@Param('id', ParseObjectIdPipe) id: string) {
     await this.adminService.deleteDoctor(id);
     return {
       message: 'doctor deleted successfully',
-      success: 'true',
+      success: true,
     };
   }
   @Delete('patients/:id')
-  async deletePatient(@Param('id') id: string) {
+  async deletePatient(@Param('id', ParseObjectIdPipe) id: string) {
     await this.adminService.deletePatient(id);
     return {
       message: 'patient deleted successfully',
-      success: 'true',
+      success: true,
     };
   }
   @Delete('hospital/:id')
-  async deleteHospital(@Param('id') id: string) {
+  async deleteHospital(@Param('id', ParseObjectIdPipe) id: string) {
     await this.adminService.deleteHospital(id);
     return {
       message: 'hospital deleted successfully',
-      success: 'true',
+      success: true,
     };
   }
   @Get('hospital/:id')
-  async getHospitalById(@Param('id') id: string) {
+  async getHospitalById(@Param('id', ParseObjectIdPipe) id: string) {
     const hospital = await this.adminService.getHospitalById(id);
     return {
       message: 'hospital retrieved successfully',
-      success: 'true',
+      success: true,
       data: { hospital },
     };
   }
@@ -161,7 +168,7 @@ export class AdminController {
     const hospitals = await this.adminService.getHospitals();
     return {
       message: 'hospital retrieved successfully',
-      success: 'true',
+      success: true,
       data: { hospitals},
     };
   }

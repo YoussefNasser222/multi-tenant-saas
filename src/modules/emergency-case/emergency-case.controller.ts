@@ -18,6 +18,8 @@ import { UpdateEmergencyCaseDto } from './dto/update-emergency-case.dto';
 import { Paid, Public, User } from '@common/decorators';
 import { EmergencyCaseFactory } from './factory';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from '@common/upload';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('emergency-case')
 export class EmergencyCaseController {
@@ -28,6 +30,7 @@ export class EmergencyCaseController {
 
   @Post()
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   async create(@Body() createEmergencyCaseDto: CreateEmergencyCaseDto) {
     const emergency = this.emergencyFactory.create(createEmergencyCaseDto);
     const createdEmergency = await this.emergencyCaseService.create(emergency);
@@ -39,7 +42,9 @@ export class EmergencyCaseController {
   }
   @Put('report/:caseCode')
   @Public()
-  @UseInterceptors(FileInterceptor('image'))
+  // caseCode كـ secret token (8 hex chars) بيحتاج حماية brute-force أقوى من الحد العام
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async uploadReport(
     @UploadedFile() file: Express.Multer.File,
     @Param('caseCode') caseCode: string,
@@ -95,6 +100,7 @@ export class EmergencyCaseController {
   }
   @Get('track/:caseCode')
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
   async trackByCaseCode(@Param('caseCode') caseCode: string) {
     const emergency = await this.emergencyCaseService.trackByCaseCode(caseCode);
     return {
@@ -106,6 +112,7 @@ export class EmergencyCaseController {
 
   @Delete('track/:caseCode')
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   async cancelByCaseCode(@Param('caseCode') caseCode: string) {
     await this.emergencyCaseService.cancelByCaseCode(caseCode);
     return { message: 'case cancelled successfully', success: true };

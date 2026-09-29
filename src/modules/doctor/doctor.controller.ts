@@ -18,6 +18,7 @@ import { UpdatedClinicDto } from './dto/update-clinic.dto';
 import { ClinicDateDto, UpdateClinicStatusDto } from './dto/clinic-status.dto';
 import { DoctorFactoryService } from './factory';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from '@common/upload';
 import { log } from 'console';
 
 @Controller('doctor')
@@ -155,7 +156,7 @@ export class DoctorController {
     };
   }
   @Put('profile-image')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   @Paid(["Doctor"])
   async updateProfileImage(@UploadedFile() file: Express.Multer.File, @User() user: any) {
     const result = await this.doctorService.updateProfileImage(file, user);

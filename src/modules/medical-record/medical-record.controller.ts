@@ -16,7 +16,7 @@ import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
 import { Auth, Paid, User } from '@common/decorators';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UploadService } from '@common/upload';
+import { UploadService, imageUploadOptions } from '@common/upload';
 import { PrescriptionExtractorService } from './prescription-extractor.service';
 import { log } from 'console';
 import { MedicalRecordFactoryService } from './factory';
@@ -31,7 +31,7 @@ export class MedicalRecordController {
 
   @Post('extract')
   @Paid(['Doctor'])
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async extractPrescription(@UploadedFile() file: Express.Multer.File, @User() user: any) {
     const { uploaded, extracted } =
@@ -50,7 +50,7 @@ export class MedicalRecordController {
   @Post('patient/upload')
   @Auth(['Patient'])
   @Throttle({ default: { ttl: 60000, limit: 10 } })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   async uploadPatientDocument(
     @UploadedFile() file: Express.Multer.File,
     @Body() body: any,
@@ -66,7 +66,7 @@ export class MedicalRecordController {
 
   @Put('patient/document/:id')
   @Auth(['Patient'])
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   async updatePatientDocument(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,

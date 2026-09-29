@@ -16,6 +16,20 @@ export enum BookingType {
   TIME = 'time',
 }
 
+/**
+ * عدّاد أرقام الدور لكل يوم (date كـ YYYY-MM-DD)، بيتحدّث بعملية atomic واحدة ($inc)
+ * عشان نمنع الـ race condition: قبل كده كنا بنعمل count() لحساب رقم الدور والتأكد من
+ * الـ maxPatientsPerDay، وبعدين create() في نداء منفصل — لو طلبين وصلوا في نفس اللحظة
+ * كانوا بياخدوا نفس رقم الدور وممكن الاتنين يعدّوا الحد الأقصى لليوم.
+ */
+@Schema({ _id: false })
+export class DailyCounter {
+  @Prop({ type: String, required: true })
+  date: string;
+  @Prop({ type: Number, required: true, default: 0 })
+  count: number;
+}
+
 @Schema({ timestamps: true })
 export class Clinic {
   readonly _id: Types.ObjectId;
@@ -58,6 +72,10 @@ export class Clinic {
 
   @Prop({ type: Number, required: true, default: 20 })
   maxPatientsPerDay: number;
+
+  // اختياري: افتراضيًا [] فمش هيأثر على أي clinic موجود بالفعل
+  @Prop({ type: [DailyCounter], default: [] })
+  dailyCounters: DailyCounter[];
 
   @Prop({
     type: Number,

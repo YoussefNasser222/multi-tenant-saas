@@ -7,6 +7,11 @@ export class Admin extends User {
     firstName: string;
     @Prop({ type: String, required: true })
     lastName: string;
+    // اختياريين: الفرونت بيعرضهم/بيعدّلهم في صفحة "ملفي الشخصي"
+    @Prop({ type: String })
+    phoneNumber?: string;
+    @Prop({ type: String })
+    userName?: string;
 }
 
 export const adminSchema = SchemaFactory.createForClass(Admin);

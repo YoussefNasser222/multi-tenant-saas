@@ -1,12 +1,12 @@
 import { HospitalRepository } from '@models/index';
-import { Hospital } from '@modules/auth/entities/auth.entity';
+import { stripSensitive } from '@common/constants';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class HospitalService {
   constructor(private readonly hospitalRepo: HospitalRepository) {}
 
-  async update(user: any, hospital: Hospital) {
+  async update(user: any, hospital: Record<string, any>) {
     const updatedHospital = await this.hospitalRepo.update(
       { _id: user._id },
       hospital,
@@ -15,8 +15,7 @@ export class HospitalService {
     if(!updatedHospital){
       throw new NotFoundException('hospital not found')
     }
-    const { password, otp, otpExpired, ...other } = updatedHospital.toObject();
-    return other;
+    return stripSensitive(updatedHospital.toObject());
   }
   
   async findOne(user: any) {
@@ -24,7 +23,6 @@ export class HospitalService {
     if (!hospital) {
       throw new NotFoundException('hospital not found');
     }
-    const { password, otp, otpExpired, ...other } = hospital.toObject();
-    return other;
+    return stripSensitive(hospital.toObject());
   }
 }

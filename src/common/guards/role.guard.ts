@@ -2,8 +2,8 @@ import { PUBLIC, ROLE } from '@common/decorators';
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
@@ -21,10 +21,11 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (!roles.includes(user.role)) {
-      throw new UnauthorizedException(
-        `Unauthorized , must be a ${roles}`,
-      );
+    // 403 (not 401): the user IS authenticated, he just doesn't have the right role.
+    // Returning 401 made the frontend think the token was expired and rotate the
+    // refresh token on every "wrong role" call.
+    if (!user || !roles.includes(user.role)) {
+      throw new ForbiddenException(`Forbidden, must be a ${roles}`);
     }
     return true;
   }

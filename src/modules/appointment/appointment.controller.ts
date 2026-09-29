@@ -18,6 +18,7 @@ import {
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentFactoryService } from './factory';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from '@common/upload';
 import { Throttle } from '@nestjs/throttler';
 
 @Controller('appointment')
@@ -89,7 +90,7 @@ export class AppointmentController {
   @Put('patient/:id')
   @Auth(['Patient'])
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
   async uploadImage(@UploadedFile() file : Express.Multer.File , @Param('id') id : string , @User() user : any){
     const appointment = await this.appointmentService.uploadImage(file,id,user)
     return {

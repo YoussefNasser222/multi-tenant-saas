@@ -1,5 +1,5 @@
 import { IsEgyptianNationalId, IsEgyptianPhone } from '@common/validator';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateHospitalDto {
   @IsString()
@@ -13,6 +13,7 @@ export class CreateHospitalDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
+  @MaxLength(128)
   password: string;
   @IsString()
   @IsNotEmpty()

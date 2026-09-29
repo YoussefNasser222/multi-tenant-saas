@@ -1,47 +1,36 @@
-import { PatientRepository } from '@models/index';
-import { UpdatedPatientDto } from '@modules/auth/dto/update-auth.dto';
-import { Patient } from '@modules/auth/entities/auth.entity';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { UpdatedPatientDto, UpdatePatientByDoctorDto } from '@modules/auth/dto/update-auth.dto';
+import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+
+/** بنبني object فيه الحقول اللي اتبعتت بس (partial update) بدل ما نكتب فوق حقول تانية بقيم قديمة/undefined. */
+function pickDefined<T extends Record<string, any>>(obj: T): Partial<T> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined && v !== null && v !== '') out[k] = v;
+  }
+  return out as Partial<T>;
+}
+
 @Injectable()
 export class PatientFactoryService {
-  constructor(private readonly patientRepo: PatientRepository) {}
-
-  async update(user: any, updatePatientDto: UpdatedPatientDto) {
-    const oldPatient = await this.patientRepo.getOne({ _id: user._id });
-    if (!oldPatient) {
-      throw new NotFoundException('patient not found');
-    }
-    const patient = new Patient();
-    patient.email = updatePatientDto.email || oldPatient.email;
-    patient.firstName = updatePatientDto.firstName || oldPatient.firstName;
-    patient.lastName = updatePatientDto.lastName || oldPatient.lastName;
-    patient.password = updatePatientDto.password
-      ? await bcrypt.hash(updatePatientDto.password, 10)
-      : oldPatient.password;
-    patient.otp = oldPatient.otp;
-    patient.otpExpired = oldPatient.otpExpired;
-    patient.createdBy = oldPatient.createdBy;
-    return patient;
+  /** المريض بيعدّل نفسه (الاسم / التليفون / الإيميل / الباسورد) */
+  async update(_user: any, dto: UpdatedPatientDto) {
+    return pickDefined({
+      email: dto.email,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      // كان بيتتجاهل بصمت (الفرونت بيبعته والباك مكانش بيحفظه)
+      phoneNumber: dto.phoneNumber,
+      password: dto.password ? await bcrypt.hash(dto.password, 10) : undefined,
+    });
   }
-  async updatePatientById(
-    id: string,
-    updatePatientDto: UpdatedPatientDto
-  ) {
-    const oldPatient = await this.patientRepo.getOne({ _id: id });
-    if(!oldPatient){
-        throw new NotFoundException('patient not found')
-    }
-    const patient = new Patient();
-    patient.email = updatePatientDto.email || oldPatient.email;
-    patient.firstName = updatePatientDto.firstName || oldPatient.firstName;
-    patient.lastName = updatePatientDto.lastName || oldPatient.lastName;
-    patient.password = updatePatientDto.password
-      ? await bcrypt.hash(updatePatientDto.password, 10)
-      : oldPatient.password;
-    patient.otp = oldPatient.otp;
-    patient.otpExpired = oldPatient.otpExpired;
-    patient.createdBy = oldPatient.createdBy;
-    return patient;
+
+  /** الدكتور بيعدّل بيانات مريض: الاسم والتليفون بس */
+  async updatePatientById(_id: string, dto: UpdatePatientByDoctorDto) {
+    return pickDefined({
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      phoneNumber: dto.phoneNumber,
+    });
   }
 }

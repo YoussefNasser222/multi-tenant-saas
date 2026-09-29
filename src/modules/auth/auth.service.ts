@@ -1,4 +1,11 @@
-import { generateOtp, generateOtpExpire, sendMail } from '@common/helpers';
+import {
+  generateOtp,
+  generateOtpExpire,
+  hashOtp,
+  sendMail,
+  verifyOtp,
+} from '@common/helpers';
+import { stripSensitive } from '@common/constants';
 import {
   DoctorRepository,
   HospitalRepository,
@@ -9,8 +16,9 @@ import {
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -22,6 +30,11 @@ import { Doctor, Hospital, Patient } from './entities/auth.entity';
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 أيام
 const MAX_OTP_ATTEMPTS = 5;
 const OTP_LOCK_DURATION_MS = 15 * 60 * 1000; // 15 دقيقة
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000; // مينفعش يطلب OTP جديد قبل دقيقة
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCK_DURATION_MS = 15 * 60 * 1000; // 15 دقيقة
+// hash وهمي بنقارن بيه لما اليوزر مش موجود عشان زمن الرد يفضل ثابت (يمنع timing attack)
+const DUMMY_HASH = '$2b$10$EN1bdw/rA/3eDOfl615SF.AIKBrg6EL7/SKqtU710X/7jbldzSRtK';
 
 @Injectable()
 export class AuthService {
@@ -41,6 +54,7 @@ export class AuthService {
       {
         userId: user._id,
         role: user.role,
+        type: 'access',
       },
       {
         secret: this.configService.get('JWT_SECRET'),
@@ -51,6 +65,7 @@ export class AuthService {
       {
         userId: user._id,
         role: user.role,
+        type: 'refresh',
       },
       {
         secret: this.configService.get('JWT_SECRET'),
@@ -68,8 +83,9 @@ export class AuthService {
       throw new ConflictException('doctor already exist');
     }
     const newDoctor = await this.doctorRepo.create(doctor);
-    const { password, isPaid, paidExpired, otp, otpExpired, ...other } =
-      newDoctor.toObject();
+    const { isPaid, paidExpired, ...other } = stripSensitive(
+      newDoctor.toObject(),
+    ) as any;
     return other;
   }
   async createPatient(patient: Patient) {
@@ -80,18 +96,45 @@ export class AuthService {
       throw new ConflictException('patient already exist');
     }
     const newPatient = await this.patientRepo.create(patient);
-    const { password, otp, otpExpired, ...other } = newPatient.toObject();
-    return other;
+    return stripSensitive(newPatient.toObject());
   }
   async login(loginDto: LoginDto) {
     const user = await this.userRepo.getOne({ nationalId: loginDto.nationalId });
-    if (!user) {
-      throw new NotFoundException('user not found');
+
+    // القفل المؤقت بعد محاولات فاشلة متكررة (محفوظ في الداتابيز → شغال على serverless كمان)
+    if (user?.loginLockedUntil && user.loginLockedUntil > new Date()) {
+      throw new HttpException(
+        'too many attempts, try again later',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
-    const isMatch = await bcrypt.compare(loginDto.password, user.password);
-    if (!isMatch) {
-      throw new BadRequestException('invalid credential');
+
+    // بنقارن دايمًا (حتى لو اليوزر مش موجود) وبنرجّع نفس الرسالة في الحالتين:
+    // مينفعش نكشف إن كان الرقم القومي مسجّل ولا لأ (خصوصية بيانات المرضى)
+    const isMatch = await bcrypt.compare(
+      loginDto.password,
+      user?.password ?? DUMMY_HASH,
+    );
+    if (!user || !isMatch) {
+      if (user) {
+        const attempts = (user.loginAttempts || 0) + 1;
+        const update: any = { loginAttempts: attempts };
+        if (attempts >= MAX_LOGIN_ATTEMPTS) {
+          update.loginLockedUntil = new Date(Date.now() + LOGIN_LOCK_DURATION_MS);
+          update.loginAttempts = 0;
+        }
+        await this.userRepo.update({ _id: user._id }, update);
+      }
+      throw new UnauthorizedException('invalid credential');
     }
+
+    if (user.loginAttempts || user.loginLockedUntil) {
+      await this.userRepo.update(
+        { _id: user._id },
+        { loginAttempts: 0, loginLockedUntil: null },
+      );
+    }
+
     const { accessToken, refreshToken } = this.generateTokens(user);
     await this.tokenRepo.create({
       userId: user._id,
@@ -101,8 +144,21 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
   async refreshToken(refreshToken: string) {
-    if (!refreshToken) {
+    // لازم يبقى string فعلًا (يمنع NoSQL injection زي { "$ne": null })
+    if (!refreshToken || typeof refreshToken !== 'string') {
       throw new BadRequestException('refresh token is required');
+    }
+    // نتأكد من التوقيع والصلاحية قبل ما نروح الداتابيز أصلًا
+    let payload: { userId: string; type?: string };
+    try {
+      payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get('JWT_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException('session expired, please login again');
+    }
+    if (payload.type === 'access') {
+      throw new UnauthorizedException('session expired, please login again');
     }
     const token = await this.tokenRepo.getOne({ refreshToken });
     if (!token) {
@@ -110,7 +166,9 @@ export class AuthService {
     }
     const user = await this.userRepo.getOne({ _id: token.userId });
     if (!user) {
-      throw new NotFoundException('user not found');
+      // الحساب اتحذف → الجلسة تتقفل
+      await this.tokenRepo.deleteMany({ userId: token.userId });
+      throw new UnauthorizedException('session expired, please login again');
     }
     const { accessToken, refreshToken: newRefreshToken } = this.generateTokens(user);
 
@@ -133,11 +191,23 @@ export class AuthService {
   }
   async sendOtp(email: string) {
     const user = await this.userRepo.getOne({ email });
+    // لو الإيميل مش موجود بنرجّع نجاح عادي (من غير ما نكشف إن الحساب مش موجود)
     if (!user) {
-      throw new NotFoundException('user not found');
+      return;
     }
     if (user.otpLockedUntil && user.otpLockedUntil > new Date()) {
       throw new BadRequestException('too many attempts, try again later');
+    }
+    // cooldown: otpExpired = وقت الإرسال + 15 دقيقة، فلو لسه فاضل أكتر من 14 دقيقة يبقى اتبعت من أقل من دقيقة
+    if (
+      user.otpExpired &&
+      user.otpExpired.getTime() - Date.now() >
+        15 * 60 * 1000 - OTP_RESEND_COOLDOWN_MS
+    ) {
+      throw new HttpException(
+        'please wait a minute before requesting a new code',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
     const otp = generateOtp();
     const otpExpired = generateOtpExpire();
@@ -146,38 +216,48 @@ export class AuthService {
       subject: 'Reset Password',
       html: `<h1>Your OTP is ${otp}</h1>`,
     });
-    await this.userRepo.update(
-      { email },
-      { otp, otpExpired, otpAttempts: 0, otpLockedUntil: null },
-    );
+    // بنخزّن hash للـ OTP مش الرقم نفسه.
+    // ومبنصفّرش عداد المحاولات هنا (كان ممكن المهاجم يطلب OTP جديد كل شوية ويكمل تخمين).
+    await this.userRepo.update({ email }, { otp: hashOtp(otp), otpExpired });
   }
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     const user = await this.userRepo.getOne({ email: resetPasswordDto.email });
+    // نفس الرسالة لو الحساب مش موجود أو الكود غلط
     if (!user) {
-      throw new NotFoundException('user not found');
+      throw new BadRequestException('invalid otp');
     }
     if (user.otpLockedUntil && user.otpLockedUntil > new Date()) {
       throw new BadRequestException('too many attempts, try again later');
     }
-    if (user.otp !== resetPasswordDto.otp) {
+    if (!verifyOtp(resetPasswordDto.otp, user.otp)) {
       const attempts = (user.otpAttempts || 0) + 1;
       const update: any = { otpAttempts: attempts };
       if (attempts >= MAX_OTP_ATTEMPTS) {
         update.otpLockedUntil = new Date(Date.now() + OTP_LOCK_DURATION_MS);
+        update.otpAttempts = 0;
+        // بعد القفل الكود القديم يتلغي
+        update.otp = '';
       }
       await this.userRepo.update({ email: resetPasswordDto.email }, update);
       throw new BadRequestException('invalid otp');
     }
-    if (user.otpExpired < new Date()) {
+    if (!user.otpExpired || user.otpExpired < new Date()) {
       throw new BadRequestException('otp expired');
     }
     const hashPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
-    // كانت otp/otpExpired بتتغير على الـ object المحلي بس من غير ما تتحفظ فعليًا في الداتابيز
-    // (يعني الـ OTP كان يفضل صالح وقابل لإعادة الاستخدام لحد ما ينتهي لوحده) - اتصلحت هنا
     await this.userRepo.update(
       { email: resetPasswordDto.email },
-      { password: hashPassword, otp: '', otpAttempts: 0, otpLockedUntil: null },
+      {
+        password: hashPassword,
+        otp: '',
+        otpAttempts: 0,
+        otpLockedUntil: null,
+        loginAttempts: 0,
+        loginLockedUntil: null,
+      },
     );
+    // تغيير الباسورد يقفل كل الجلسات القديمة
+    await this.tokenRepo.deleteMany({ userId: user._id });
   }
   async createHospital(hospital: Hospital) {
     const hospitalExist = await this.hospitalRepo.getOne({
@@ -187,7 +267,7 @@ export class AuthService {
       throw new ConflictException('hospital already exists');
     }
     const hospitalData = await this.hospitalRepo.create(hospital);
-    const {password , otp , otpExpired , isPaid , ...other} = hospitalData.toObject() 
+    const { isPaid, ...other } = stripSensitive(hospitalData.toObject()) as any;
     return other;
   }
 }

@@ -13,7 +13,8 @@ export class User {
   readonly _id: Types.ObjectId;
   @Prop({ type: String, required: true })
   password: string;
-  @Prop({ type: String, required: true })
+  // index (مش unique) عشان send-otp / reset-password بيدوروا بالإيميل
+  @Prop({ type: String, required: true, index: true })
   email: string;
   role: Role;
   @Prop({ type: String })
@@ -26,6 +27,11 @@ export class User {
   otpAttempts: number;
   @Prop({ type: Date })
   otpLockedUntil: Date;
+  // قفل الحساب مؤقتًا بعد محاولات لوجن غلط متكررة (حقول اختيارية → مفيش تأثير على الداتا القديمة)
+  @Prop({ type: Number, default: 0 })
+  loginAttempts: number;
+  @Prop({ type: Date })
+  loginLockedUntil: Date;
   @Prop({ type: String, required: true, unique: true, index: true })
   nationalId: string;
 }

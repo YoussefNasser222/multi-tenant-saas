@@ -1,4 +1,5 @@
 import { PUBLIC } from '@common/decorators';
+import { SENSITIVE_SELECT } from '@common/constants';
 import { Role, UserRepository } from '@models/index';
 import {
     CanActivate,
@@ -14,12 +15,19 @@ const USER_CACHE_TTL_MS = 30_000; // 30 ثانية
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-    // كاش بسيط في الميموري لبيانات اليوزر عشان نقلل ضغط الداتابيز
-    // لما نفس اليوزر يعمل أكتر من request قريبين من بعض.
-    // ملحوظة: لو السيرفر شغال على بيئة serverless (زي Vercel)، الكاش ده هيفيد
-    // بس وقت الـ warm invocations، مش ضمان يشتغل على كل طلب. لو عايز حل مضمون
-    // 100%، الأنسب Redis (مثلاً Upstash) بدل الميموري المحلية.
+    // كاش بسيط في الميموري لبيانات اليوزر عشان نقلل ضغط الداتابيز.
+    // ملحوظة: على Vercel (serverless) الكاش ده بيفيد بس وقت الـ warm invocations.
+    // ✔ اتغيّر: الكاش دلوقتي مبيخزنش الـ password hash ولا بيانات الـ OTP خالص.
     private static userCache = new Map<string, { user: any; expiresAt: number }>();
+
+    /** بيتنادى بعد أي تعديل إداري (تفعيل اشتراك / حذف) عشان التغيير يظهر فورًا على نفس الـ instance */
+    static invalidate(userId?: string | { toString(): string }) {
+        if (userId === undefined) {
+            AuthGuard.userCache.clear();
+            return;
+        }
+        AuthGuard.userCache.delete(userId.toString());
+    }
 
     constructor(
         private readonly userRepo: UserRepository,
@@ -46,10 +54,16 @@ export class AuthGuard implements CanActivate {
             scheme?.toLowerCase() === 'bearer' && tokenPart ? tokenPart : authHeader;
 
         try {
-            const payload: { userId: string; email: string; role: Role } =
+            const payload: { userId: string; email: string; role: Role; type?: string } =
                 this.jwtService.verify(token, {
                     secret: this.configService.get('JWT_SECRET'),
                 });
+
+            // الـ refresh token متوقعش يتقبل كـ access token (كان بيخلّي مدة الـ 1d ملهاش لازمة).
+            // التوكنز القديمة (قبل التعديل) مفيهاش type فبتفضل شغالة لحد ما تتجدد.
+            if (payload.type === 'refresh') {
+                throw new UnauthorizedException('Invalid token');
+            }
 
             const user = await this.getUser(payload.userId);
             if (!user) {
@@ -73,12 +87,18 @@ export class AuthGuard implements CanActivate {
             return cached.user;
         }
 
-        const user = await this.userRepo.getOne({ _id: userId });
+        // بنستبعد الـ password والـ OTP من اليوزر اللي بيتحط على الـ request وفي الكاش
+        const user = await this.userRepo.getOne({ _id: userId }, SENSITIVE_SELECT);
         if (user) {
             AuthGuard.userCache.set(userId, {
                 user,
                 expiresAt: Date.now() + USER_CACHE_TTL_MS,
             });
+            // منع تضخم الميموري في instance طويل العمر
+            if (AuthGuard.userCache.size > 5000) {
+                const oldest = AuthGuard.userCache.keys().next().value;
+                if (oldest) AuthGuard.userCache.delete(oldest);
+            }
         }
         return user;
     }

@@ -1,5 +1,5 @@
 import { AppointmentRepository, PatientRepository, Role } from '@models/index';
-import { Patient } from '@modules/auth/entities/auth.entity';
+import { DEFAULT_LIST_LIMIT, SENSITIVE_SELECT, stripSensitive } from '@common/constants';
 import {
   BadRequestException,
   ForbiddenException,
@@ -20,8 +20,7 @@ export class PatientService {
   async getProfile(user: any) {
     const patient = await this.patientRepo.getOne({ _id: user._id });
     if (!patient) throw new NotFoundException('patient not found');
-    const { password, otp, otpExpired, ...other } = patient.toObject();
-    return other;
+    return stripSensitive(patient.toObject());
   }
 
   async getPatientByNationalId(id: string) {
@@ -37,32 +36,22 @@ export class PatientService {
   }
 
   async getMyPatients(user: any) {
-    const appointments = await this.appointmentRepo.getAll(
-      { doctorId: user._id },
-      {},
-      { populate: { path: 'patientId', select: '-password -otp -otpExpired' } },
-    );
-    if (!appointments || appointments.length === 0) return [];
-    const uniquePatientsMap = new Map();
-    for (const appt of appointments) {
-      const patient = appt.patientId as any;
-      if (patient && patient._id) {
-        uniquePatientsMap.set(patient._id.toString(), patient);
-      }
-    }
-    return Array.from(uniquePatientsMap.values());
+    // distinct بدل ما نحمّل كل المواعيد بس عشان نطلّع المرضى المتكررين
+    const patientIds = await this.appointmentRepo.distinct('patientId', {
+      doctorId: user._id,
+    });
+    if (!patientIds || patientIds.length === 0) return [];
+    return this.patientRepo.getAll({ _id: { $in: patientIds } }, SENSITIVE_SELECT, {
+      limit: DEFAULT_LIST_LIMIT,
+    });
   }
 
   /* مرضى النظام غير المسجلين عند هذا الدكتور */
   async getNonClinicPatients(user: any, search?: string) {
     /* جمع patientId المسجلين عند الدكتور */
-    const appointments = await this.appointmentRepo.getAll(
-      { doctorId: user._id },
-      { patientId: 1 },
-    );
-    const myPatientIds = appointments.map((a) =>
-      (a.patientId as any).toString(),
-    );
+    const myPatientIds = (
+      await this.appointmentRepo.distinct('patientId', { doctorId: user._id })
+    ).map((id) => id.toString());
 
     /* بناء فلتر البحث */
     const filter: any = {
@@ -78,14 +67,18 @@ export class PatientService {
       ];
     }
 
-    const patients = await this.patientRepo.getAll(filter, {
-      firstName: 1,
-      lastName: 1,
-      nationalId: 1,
-      phoneNumber: 1,
-      isFamily: 1,
-      _id: 1,
-    });
+    const patients = await this.patientRepo.getAll(
+      filter,
+      {
+        firstName: 1,
+        lastName: 1,
+        nationalId: 1,
+        phoneNumber: 1,
+        isFamily: 1,
+        _id: 1,
+      },
+      { limit: DEFAULT_LIST_LIMIT },
+    );
     return patients;
   }
 
@@ -101,31 +94,33 @@ export class PatientService {
     }
     const patient = await this.patientRepo.getOne(
       { _id: id },
-      { password: 0, otp: 0, otpExpired: 0 },
+      SENSITIVE_SELECT,
     );
     if (!patient) throw new NotFoundException('patient not found');
     return patient;
   }
 
-  async updateMe(patient: Patient, user: any) {
+  async updateMe(patient: Record<string, any>, user: any) {
     const updatedPatient = await this.patientRepo.update(
       { _id: user._id },
       patient,
-      { returnDocument: 'after', select: '-password' },
+      { returnDocument: 'after', select: SENSITIVE_SELECT },
     );
     if (!updatedPatient) throw new NotFoundException('patient not found');
     return updatedPatient;
   }
 
-  async updatePatientById(patient: Patient, user: any, id: string) {
+  async updatePatientById(patient: Record<string, any>, user: any, id: string) {
     const appointmentExist = await this.appointmentRepo.getOne({
       doctorId: user._id,
       patientId: id,
     });
     if (!appointmentExist) throw new ForbiddenException();
-    return await this.patientRepo.update({ _id: id }, patient, {
+    const updated = await this.patientRepo.update({ _id: id }, patient, {
       returnDocument: 'after',
-      select: '-password -otp -otpExpired',
+      select: SENSITIVE_SELECT,
     });
+    if (!updated) throw new NotFoundException('patient not found');
+    return updated;
   }
 }

@@ -14,6 +14,7 @@ import {
 import { Appointment } from './entities/appointment.entity';
 import { log } from 'console';
 import { UploadService } from '@common/upload';
+import { DEFAULT_LIST_LIMIT, SENSITIVE_SELECT } from '@common/constants';
 
 @Injectable()
 export class AppointmentService {
@@ -45,15 +46,17 @@ export class AppointmentService {
       {},
       {
         populate: [
-          { path: 'patientId', select: '-password -otp -otpExpired' },
+          { path: 'patientId', select: SENSITIVE_SELECT },
           { path: 'clinicId' },
         ],
+        sort: { date: -1 },
+        limit: DEFAULT_LIST_LIMIT,
       },
     );
-    if (!appointments || appointments.length === 0) {
-      throw new NotFoundException('appointments not found');
-    }
-    return appointments;
+    // كان بيرمي 404 لو مفيش مواعيد؛ ده بيكسر صفحة الدكتور الجديد (0 مواعيد) لأن الفرونت
+    // بيلجأ لـ /appointment/patient (403 لأنه مش Patient) → الصفحة كانت بتفشل بالكامل.
+    // "مفيش نتايج" مش خطأ، فالـ endpoint بيرجّع array فاضية زي أي list endpoint تاني.
+    return appointments || [];
   }
 
   async getAppointment(user: any, id: string) {
@@ -67,7 +70,7 @@ export class AppointmentService {
         populate: [
           {
             path: 'patientId',
-            select: '-password -otp -otpExpired',
+            select: SENSITIVE_SELECT,
           },
           { path: 'clinicId' },
         ],

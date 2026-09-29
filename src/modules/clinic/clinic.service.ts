@@ -1,5 +1,6 @@
 import { AppointmentRepository, AppointmentStatus, ClinicRepository } from '@models/index';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { DEFAULT_LIST_LIMIT } from '@common/constants';
 
 @Injectable()
 export class ClinicService {
@@ -16,6 +17,8 @@ export class ClinicService {
           select: 'firstName lastName image',
           match: { paidExpired: { $gt: new Date() } },
         },
+        sort: { createdAt: -1 },
+        limit: DEFAULT_LIST_LIMIT,
       },
     );
     const paidClinics = clinics.filter((c) => c.doctorId !== null);

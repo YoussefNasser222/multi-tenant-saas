@@ -268,6 +268,12 @@ export class MedicalRecordService {
     );
   }
 
+  /**
+   * الدكتور بيشوف مستندات مريض عنده — لكن بس المستندات العامة أو اللي المريض
+   * وجّهها له هو بالذات (targetDoctorId). قبل كده كان بيشوف كل مستندات المريض
+   * حتى لو موجّهة لدكتور تاني، وده تسريب خصوصية (المريض بيختار يبعت المستند
+   * لدكتور معيّن بالظبط عشان كده).
+   */
   async getPatientDocuments(doctorUser: any, patientId: string) {
     const appt = await this.appointmentRepo.getOne({
       patientId,
@@ -279,7 +285,14 @@ export class MedicalRecordService {
       );
     }
     return this.patientDocumentRepo.getAll(
-      { patientId },
+      {
+        patientId,
+        $or: [
+          { targetDoctorId: { $exists: false } },
+          { targetDoctorId: null },
+          { targetDoctorId: doctorUser._id },
+        ],
+      },
       {},
       {
         sort: { createdAt: -1 },

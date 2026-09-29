@@ -54,6 +54,20 @@ export class AbstractRepository<T> {
     return this.model.countDocuments(filter);
   }
 
+  /** distinct values of a field (way cheaper than loading every document just to dedupe them) */
+  public async distinct(field: string, filter: QueryFilter<T> = {}): Promise<any[]> {
+    return this.model.distinct(field, filter);
+  }
+
+  /** highest numeric value of a field (or 0). Used e.g. for the next queue number. */
+  public async maxOf(field: string, filter: QueryFilter<T> = {}): Promise<number> {
+    const top = (await this.model
+      .findOne(filter, { [field]: 1 } as any)
+      .sort({ [field]: -1 })
+      .lean()) as any;
+    return Number(top?.[field]) || 0;
+  }
+
   public async deleteOne(filter: QueryFilter<T>): Promise<DeleteResult> {
     return this.model.deleteOne(filter);
   }

@@ -6,6 +6,7 @@ import {
   IsString,
   Length,
   Matches,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 
@@ -18,6 +19,7 @@ export class CreateDoctorDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
+  @MaxLength(128)
   password: string;
   @IsString()
   @IsNotEmpty()
@@ -55,6 +57,7 @@ export class CreatePatientDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
+  @MaxLength(128)
   password: string;
 
   @IsString()
@@ -66,14 +69,16 @@ export class CreatePatientDto {
   email: string;
 }
 
+// اللوجن بيتحقق من الشكل بس (string + طول معقول): ده كفاية لمنع NoSQL injection،
+// ومش بنطبّق خوارزمية الرقم القومي هنا عشان حسابات قديمة (زي الأدمن) متتقفلش.
 export class LoginDto {
   @IsString()
   @IsNotEmpty()
-  @IsEgyptianNationalId()
+  @MaxLength(32)
   nationalId: string;
   @IsString()
   @IsNotEmpty()
-  @MinLength(5)
+  @MaxLength(128)
   password: string;
 }
 
@@ -86,6 +91,7 @@ export class ResetPasswordDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
+  @MaxLength(128)
   newPassword: string;
 
   @IsEmail()
@@ -97,6 +103,7 @@ export class ResetPasswordDto {
 export class RefreshTokenDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2048)
   refreshToken: string;
 }
 
