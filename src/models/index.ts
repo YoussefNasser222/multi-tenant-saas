@@ -39,3 +39,6 @@ export * from "./emergency-case/emergency-case.schema"
 
 export * from './patientDocument/patientDocument.schema';
 export * from './patientDocument/patientDocument.repository';
+
+export * from './consultation/consultation.schema';
+export * from './consultation/consultation.repository';

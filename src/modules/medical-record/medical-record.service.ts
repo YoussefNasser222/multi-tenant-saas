@@ -257,8 +257,14 @@ export class MedicalRecordService {
     });
   }
 
+  /**
+   * المريض بيشوف مستنداته هو، لكن بنشيل تحليل الـ AI (aiAnalysis) من أي مستند
+   * موجّه لدكتور معيّن (targetDoctorId): التحليل ده مخصوص للدكتور اللي المريض
+   * بعتله بس، مش للمريض نفسه. مستندات عامة (من غير targetDoctorId) تحليلها
+   * بيفضل ظاهر عادي — دي شبيهة بالاستشارات العامة.
+   */
   async getMyDocuments(user: any) {
-    return this.patientDocumentRepo.getAll(
+    const documents = await this.patientDocumentRepo.getAll(
       { patientId: user._id },
       {},
       {
@@ -266,6 +272,14 @@ export class MedicalRecordService {
         populate: { path: 'targetDoctorId', select: 'firstName lastName' },
       },
     );
+    return documents.map((doc) => {
+      if (doc.targetDoctorId && doc.aiAnalysis) {
+        const obj = doc.toObject();
+        delete obj.aiAnalysis;
+        return obj;
+      }
+      return doc;
+    });
   }
 
   /**

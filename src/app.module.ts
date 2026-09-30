@@ -14,6 +14,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ClinicModule } from './modules/clinic/clinic.module';
 import { DoctorModule } from './modules/doctor/doctor.module';
 import { EmergencyCaseModule } from './modules/emergency-case/emergency-case.module';
+import { ConsultationModule } from './modules/consultation/consultation.module';
 import { GeneralNotificationModule } from './modules/general-notification/general-notification.module';
 import { HospitalModule } from './modules/hospital/hospital.module';
 import { MedicalRecordModule } from './modules/medical-record/medical-record.module';
@@ -57,6 +58,7 @@ import { PatientModule } from './modules/patient/patient.module';
     HospitalModule,
     GeneralNotificationModule,
     EmergencyCaseModule,
+    ConsultationModule,
   ],
   controllers: [AppController],
   providers: [

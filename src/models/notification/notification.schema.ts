@@ -14,6 +14,10 @@ export class Notification {
   message: string;
   @Prop({ type: Boolean, default: false })
   isRead: boolean;
+  // اختياري: موجود بس للإشعارات اللي بتشاور على استشارة طبية جديدة، عشان
+  // الفرونت يقدر يودّي الدكتور للاستشارة نفسها لما يدوس على الإشعار.
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Consultation' })
+  consultationId?: Types.ObjectId;
 }
 
 export const notificationSchema = SchemaFactory.createForClass(Notification);
