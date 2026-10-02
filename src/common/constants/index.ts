@@ -28,3 +28,6 @@ export const DEFAULT_LIST_LIMIT = 1000;
 
 /** Upload limits shared by every FileInterceptor (Vercel itself caps bodies at ~4.5MB). */
 export const UPLOAD_LIMITS = { fileSize: 5 * 1024 * 1024, files: 1 } as const;
+
+/** Same, but for endpoints accepting several files at once (e.g. surgery-booking reports). */
+export const UPLOAD_LIMITS_MULTI = { fileSize: 5 * 1024 * 1024, files: 5 } as const;

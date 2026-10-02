@@ -1,5 +1,5 @@
 import type { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
-import { UPLOAD_LIMITS } from '@common/constants';
+import { UPLOAD_LIMITS, UPLOAD_LIMITS_MULTI } from '@common/constants';
 
 /**
  * قبل كده FileInterceptor كان من غير أي limits: أي حد يقدر يبعت ملف كبير جدًا (يتحمّل كامل
@@ -8,4 +8,9 @@ import { UPLOAD_LIMITS } from '@common/constants';
  */
 export const imageUploadOptions: MulterOptions = {
   limits: UPLOAD_LIMITS,
+};
+
+/** نفس الفكرة، لكن لـ FilesInterceptor (أكتر من ملف في نفس الوقت، زي تقارير حجز العمليات). */
+export const multiImageUploadOptions: MulterOptions = {
+  limits: UPLOAD_LIMITS_MULTI,
 };

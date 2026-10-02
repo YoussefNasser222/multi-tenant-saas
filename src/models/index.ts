@@ -42,3 +42,6 @@ export * from './patientDocument/patientDocument.repository';
 
 export * from './consultation/consultation.schema';
 export * from './consultation/consultation.repository';
+
+export * from './surgery-booking/surgery-booking.schema';
+export * from './surgery-booking/surgery-booking.repository';

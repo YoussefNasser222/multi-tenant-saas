@@ -88,6 +88,16 @@ export class EmergencyCaseController {
       data: { emergency },
     };
   }
+  @Patch(':id/accept')
+  @Paid(['Hospital'])
+  async accept(@Param('id') id: string, @User() user: any) {
+    const emergency = await this.emergencyCaseService.accept(id, user);
+    return {
+      message: 'تم قبول الحالة بنجاح',
+      success: true,
+      data: { emergency },
+    };
+  }
   @Patch(':id/resolve')
   @Paid(['Hospital'])
   async resolve(@Param('id') id: string, @User() user: any) {

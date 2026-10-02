@@ -86,6 +86,17 @@ export class NotificationController {
       data: { notifications },
     };
   }
+  @Get('hospital')
+  @Paid(['Hospital'])
+  async getAllNotificationForHospital(@User() user: any) {
+    const notifications =
+      await this.notificationService.getAllNotificationForHospital(user);
+    return {
+      message: 'data retrieved successfully',
+      success: true,
+      data: { notifications },
+    };
+  }
   @Get('patient/:id')
   @Auth(['Patient'])
   async getPatientNotificationById(@Param('id') id: string, @User() user: any) {

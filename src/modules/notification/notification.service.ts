@@ -41,6 +41,16 @@ export class NotificationService {
     }
     return notifications;
   }
+  /** إشعارات موجّهة لمستشفى (زي "طلب حجز عملية جديد") */
+  async getAllNotificationForHospital(user: any) {
+    const notifications = await this.notificationRepo.getAll({
+      hospitalId: user._id,
+    });
+    if (!notifications || notifications.length == 0) {
+      return [];
+    }
+    return notifications;
+  }
   async deleteNotification(id: string, user: any) {
     const notification = await this.notificationRepo.getOne({
       _id: id,
