@@ -89,10 +89,16 @@ export class EmergencyCaseService {
         },
         {},
         {
-          populate: {
-            path: 'claimedByHospitalIds',
-            select: 'hospitalName city governorate address phoneNumber',
-          },
+          populate: [
+            {
+              path: 'claimedByHospitalIds',
+              select: 'hospitalName city governorate address phoneNumber',
+            },
+            {
+              path: 'acceptedByHospitalId',
+              select: 'hospitalName city governorate address phoneNumber',
+            },
+          ],
         },
       )) || []
     );
