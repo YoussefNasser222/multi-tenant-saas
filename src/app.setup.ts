@@ -2,7 +2,19 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { GlobalExceptionFilter } from '@common/filters';
 import type { NextFunction, Request, Response } from 'express';
 
-const DEFAULT_ORIGINS = ['https://medical-clinic-saas.vercel.app'];
+const DEFAULT_ORIGINS = [
+  'https://medical-clinic-saas.vercel.app',
+  // ── Local development ──────────────────────────────────────────────────────
+  // مسموح بيها دايمًا بغض النظر عن NODE_ENV عشان المطور يقدر يختبر
+  // الفرونت على localhost حتى لو الباك اند شغال بـ production mode
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:5173',
+];
 
 // روابط الـ Preview اللي Vercel بيولّدها تلقائيًا لكل فرع/كومِت شكلها مش ثابت
 // (مثلًا multi-tenant-saas-git-main-3bdduo-bits-projects.vercel.app أو
@@ -16,11 +28,7 @@ function allowedOrigins(): string[] {
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
-  const dev =
-    process.env.NODE_ENV === 'production'
-      ? []
-      : ['http://localhost:3000', 'http://127.0.0.1:3000'];
-  return Array.from(new Set([...DEFAULT_ORIGINS, ...fromEnv, ...dev]));
+  return Array.from(new Set([...DEFAULT_ORIGINS, ...fromEnv]));
 }
 
 function isOriginAllowed(origin: string, allowlist: string[]): boolean {
