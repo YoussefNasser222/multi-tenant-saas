@@ -46,6 +46,28 @@ export class AppointmentController {
       data: { createdAppointment },
     };
   }
+
+  @Post('patient/waitlist')
+  @Auth(['Patient'])
+  async joinWaitlistByPatient(
+    @Body() createAppointmentDto: CreateAppointmentPatientDto,
+    @User() user: any,
+  ) {
+    const result =
+      await this.appointmentFactoryService.joinWaitlistByPatient(
+        createAppointmentDto,
+        user,
+      );
+    const createdAppointment =
+      await this.appointmentService.createAppointment(result.appointment);
+    return {
+      message: result.wasWaitlisted
+        ? 'تم إضافتك إلى قائمة الانتظار بنجاح'
+        : 'تم تأكيد حجزك بنجاح',
+      success: true,
+      data: { createdAppointment, wasWaitlisted: result.wasWaitlisted },
+    };
+  }
   @Post('doctor/:id')
   @Paid(['Doctor'])
   async createAppointmentByDoctor(

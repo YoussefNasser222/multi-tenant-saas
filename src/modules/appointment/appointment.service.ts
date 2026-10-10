@@ -1,6 +1,7 @@
 import {
   AppointmentRepository,
   AppointmentStatus,
+  ClinicRepository,
   DoctorRepository,
 } from '@models/index';
 import {
@@ -21,6 +22,7 @@ export class AppointmentService {
   constructor(
     private readonly appointmentRepo: AppointmentRepository,
     private readonly doctorRepo: DoctorRepository,
+    private readonly clinicRepo: ClinicRepository,
     private readonly uploadService: UploadService,
   ) {}
 
@@ -83,13 +85,48 @@ export class AppointmentService {
   }
 
   async updateAppointment(user: any, id: string, updateAppointmentDto: any) {
-    const appointment = await this.appointmentRepo.update(
-      { _id: id, doctorId: user._id },
-      { status: updateAppointmentDto.status },
-    );
-    if (!appointment) {
+    const existing = await this.appointmentRepo.getOne({
+      _id: id,
+      doctorId: user._id,
+    });
+    if (!existing) {
       throw new NotFoundException('appointment not found');
     }
+
+    const updateData: any = { status: updateAppointmentDto.status };
+
+    // إذا تم تأكيد حجز كان في قائمة الانتظار ولم يكن لديه رقم دور، احجز له رقم دور متتابع
+    if (
+      updateAppointmentDto.status === AppointmentStatus.CONFIRMED &&
+      !existing.queueNumber
+    ) {
+      const dateKey = new Date(existing.date).toISOString().slice(0, 10);
+      const inc = await this.clinicRepo.update(
+        {
+          _id: existing.clinicId,
+          dailyCounters: { $elemMatch: { date: dateKey } },
+        } as any,
+        { $inc: { 'dailyCounters.$.count': 1 } } as any,
+        { returnDocument: 'after' },
+      );
+      if (inc) {
+        const counter = inc.dailyCounters?.find((d: any) => d.date === dateKey);
+        updateData.queueNumber = counter?.count ?? 1;
+      } else {
+        await this.clinicRepo.update(
+          { _id: existing.clinicId, 'dailyCounters.date': { $ne: dateKey } } as any,
+          { $push: { dailyCounters: { date: dateKey, count: 1 } } } as any,
+          { returnDocument: 'after' },
+        );
+        updateData.queueNumber = 1;
+      }
+    }
+
+    const appointment = await this.appointmentRepo.update(
+      { _id: id, doctorId: user._id },
+      updateData,
+      { returnDocument: 'after' },
+    );
     return appointment;
   }
   async getMyAllAppointmentsByPatient(user: any) {
@@ -102,10 +139,36 @@ export class AppointmentService {
             { path: 'doctorId', select: 'firstName lastName image' },
             { path: 'clinicId' },
           ],
+          sort: { createdAt: -1 },
         },
       )) || []
     );
   }
+
+  /**
+   * الحصول على قائمة الانتظار لعيادة الدكتور في يوم معين
+   */
+  async getWaitlistForDate(user: any, date: string) {
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const waitlist = await this.appointmentRepo.getAll(
+      {
+        doctorId: user._id,
+        date: { $gte: dayStart, $lte: dayEnd },
+        status: AppointmentStatus.WAITLISTED,
+      },
+      {},
+      {
+        populate: [{ path: 'patientId', select: SENSITIVE_SELECT }],
+        sort: { waitlistPosition: 1 },
+      },
+    );
+    return waitlist || [];
+  }
+
   async uploadImage(file: Express.Multer.File, id: string, user: any) {
     if (!file) {
       throw new BadRequestException('File not found');

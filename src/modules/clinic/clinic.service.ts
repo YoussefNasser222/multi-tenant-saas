@@ -49,6 +49,7 @@ export class ClinicService {
         isOpenDay: false,
         isFull: true,
         queueCount: 0,
+        waitlistCount: 0,
         maxPatientsPerDay: clinic.maxPatientsPerDay || 20,
         remainingSlots: 0,
       };
@@ -85,6 +86,12 @@ export class ClinicService {
       status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
     });
 
+    const waitlistCount = await this.appointmentRepo.count({
+      clinicId,
+      date: { $gte: dayStart, $lte: dayEnd },
+      status: AppointmentStatus.WAITLISTED,
+    });
+
     const maxPatients = clinic.maxPatientsPerDay || 20;
     const isFull = activeCount >= maxPatients;
 
@@ -94,6 +101,7 @@ export class ClinicService {
       isOpenDay,
       isFull,
       queueCount: activeCount,
+      waitlistCount,
       maxPatientsPerDay: maxPatients,
       remainingSlots: Math.max(0, maxPatients - activeCount),
     };

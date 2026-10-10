@@ -10,6 +10,7 @@ export class Appointment {
   status: AppointmentStatus;
   notes?: string;
   queueNumber?: number;
+  waitlistPosition?: number;
   visitingType: VisitType;
   contactPhone?: string;
   image: ImageType;

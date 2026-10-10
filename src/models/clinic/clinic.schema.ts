@@ -30,6 +30,18 @@ export class DailyCounter {
   count: number;
 }
 
+/**
+ * عدّاد أرقام قائمة الانتظار لكل يوم (date كـ YYYY-MM-DD)، بيتحدّث atomically بنفس
+ * آلية dailyCounters عشان نمنع تعيين نفس الرقم لشخصين.
+ */
+@Schema({ _id: false })
+export class WaitlistCounter {
+  @Prop({ type: String, required: true })
+  date: string;
+  @Prop({ type: Number, required: true, default: 0 })
+  count: number;
+}
+
 @Schema({ timestamps: true })
 export class Clinic {
   readonly _id: Types.ObjectId;
@@ -76,6 +88,10 @@ export class Clinic {
   // اختياري: افتراضيًا [] فمش هيأثر على أي clinic موجود بالفعل
   @Prop({ type: [DailyCounter], default: [] })
   dailyCounters: DailyCounter[];
+
+  // عداد قائمة الانتظار اليومية
+  @Prop({ type: [WaitlistCounter], default: [] })
+  waitlistCounters: WaitlistCounter[];
 
   @Prop({
     type: Number,

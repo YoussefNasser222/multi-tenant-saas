@@ -35,6 +35,8 @@ export class Appointment {
   notes?: string;
   @Prop({ type: Number })
   queueNumber?: number;
+  @Prop({ type: Number })
+  waitlistPosition?: number;
   @Prop({ type: String, enum: VisitType , default : VisitType.NEW, required: true })
   visitingType: VisitType;
   @Prop({ type: String })
